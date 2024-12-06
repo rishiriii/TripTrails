@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Trip</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Add a New Trip</h1>
+  
+  <form id="add-trip-form">
+    <label>Title: <input type="text" name="title" required></label><br>
+    <label>Start Location: <input type="text" name="start" required></label><br>
+    <label>End Location: <input type="text" name="end" required></label><br>
+    <label>Days: <input type="number" name="days" required></label><br>
+    <label>Nights: <input type="number" name="nights" required></label><br>
+    <label>Expense: <input type="number" name="expense" required></label><br>
+    <label>Description: <textarea name="description" required></textarea></label><br>
+    
+    <div id="stops-section">
+      <h3>Stops</h3>
+      <div id="stops-container">
+        <!-- Stops will be appended here -->
+      </div>
+      <input type="text" id="stop-input" placeholder="Enter a stop" />
+      <button type="button" id="add-stop-btn">Add Stop</button>
+    </div>
+    
+    <label>Visibility:
+      <select name="visibility" required>
+        <option value="public">Public</option>
+        <option value="private">Private</option>
+      </select>
+    </label><br>
+    
+    <button type="submit">Add Trip</button>
+  </form>
+
+  <script src="add-trip.js"></script>
+</body>
+</html>

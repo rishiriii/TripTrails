@@ -36,6 +36,11 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
   const formData = new FormData(event.target);
   const newTrip = Object.fromEntries(formData.entries());
 
+  // Automatically generate the title from the start and end fields
+  const start = formData.get('start');
+  const end = formData.get('end');
+  newTrip.title = `${start} - ${end}`;
+
   // Include the stops array in the trip data
   newTrip.stops = stops;
 

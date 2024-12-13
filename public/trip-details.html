@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trip Details</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <h1>Trip Details</h1>
@@ -15,6 +15,14 @@
     <p id="trip-expense"></p>
     <p id="trip-description"></p>
     
+    <h3>Trip Route</h3>
+    <div id="trip-route">
+      <div class="start-stop-line">
+        <div class="start-marker">0</div>
+        <div id="stops-container"></div>
+      </div>
+    </div>
+
     <h3>Stops</h3>
     <ul id="trip-stops">
       <!-- Stops will be dynamically populated here -->

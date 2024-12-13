@@ -21,6 +21,7 @@ async function loadTrips() {
           <h3>${trip.title || 'Untitled Trip'}</h3>
           <p>${trip.days || 0} Days / ${trip.nights || 0} Nights</p>
           <p>Cost: $${trip.expense || 0}</p>
+          <p>Stops: ${trip.stops ? trip.stops.length : 0}</p> <!-- Show number of stops -->
           <button class="delete-trip-btn" data-id="${trip.id}">Delete</button>
         </div>
       `;

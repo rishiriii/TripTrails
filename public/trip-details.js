@@ -22,12 +22,30 @@ async function loadTripDetails() {
     document.getElementById('trip-expense').textContent = `Cost: $${trip.expense || 0}`;
     document.getElementById('trip-description').textContent = trip.description || 'No description available';
 
-    // Handle stops
+    // Handle stops and route display
     const stopsList = document.getElementById('trip-stops');
+    const stopsContainer = document.getElementById('stops-container');
     if (trip.stops && trip.stops.length > 0) {
+      // Add stops to the list
       stopsList.innerHTML = trip.stops.map(stop => `<li>${stop}</li>`).join('');
+
+      // Handle visual route with stop markers
+      stopsContainer.innerHTML = ''; // Clear existing route markers
+      const startMarker = document.createElement('div');
+      startMarker.className = 'start-marker';
+      startMarker.textContent = '0'; // Start marker
+      stopsContainer.appendChild(startMarker);
+
+      // Add stop markers dynamically
+      trip.stops.forEach((stop, index) => {
+        const stopMarker = document.createElement('div');
+        stopMarker.className = 'stop-marker';
+        stopMarker.style.top = `${(index + 1) * 40}px`; // Adjust position of each stop
+        stopsContainer.appendChild(stopMarker);
+      });
     } else {
       stopsList.innerHTML = '<li>No stops available</li>';
+      stopsContainer.innerHTML = ''; // Clear route container
     }
 
     // Handle photos

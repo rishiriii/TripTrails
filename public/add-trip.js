@@ -52,5 +52,5 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
   });
 
   // Redirect back to homepage
-  window.location.href = 'index.html';
+  window.location.href = 'Home.html';
 });

@@ -3,17 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TripTrails</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Redirecting...</title>
+  <script>
+    window.onload = () => {
+      if (localStorage.getItem('loggedIn')) {
+        window.location.href = 'home.html'; // Redirect to main page if logged in
+      } else {
+        window.location.href = 'login.html'; // Redirect to login page otherwise
+      }
+    };
+  </script>
 </head>
 <body>
-  <button onclick="window.location.href='add-trip.html'">Add Trip</button>
-  <h1>Welcome to TripTrails</h1>
-  
-  <div id="trip-list" class="card-container">
-    <!-- Trip cards will be dynamically inserted here -->
-  </div>
-
-  <script src="script.js"></script>
+  <h1>Redirecting...</h1>
 </body>
+
 </html>

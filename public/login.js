@@ -9,7 +9,7 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
 
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    alert('Login successful!');
+    
     console.log('User logged in:', userCredential.user);
     window.location.href = 'home.html'; // Redirect to homepage
   } catch (error) {
@@ -24,7 +24,7 @@ document.getElementById('google-login').addEventListener('click', async () => {
 
   try {
     const result = await signInWithPopup(auth, provider);
-    alert('Login with Google successful!');
+    
     console.log('Google user logged in:', result.user);
     window.location.href = 'home.html'; // Redirect to homepage
   } catch (error) {

@@ -10,7 +10,7 @@ document.getElementById('signup-form').addEventListener('submit', async (event) 
 
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    alert('Signup successful!');
+    
     console.log('User signed up:', userCredential.user);
     window.location.href = 'home.html'; // Redirect to homepage after signup
   } catch (error) {

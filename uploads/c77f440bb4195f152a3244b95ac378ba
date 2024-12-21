@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "weighty-bounty-444706-c7",
+  "private_key_id": "653f1ed4dd086cd360d1919a9acdeab249010d5c",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDxak+LTXSWZIDN\nFKq9Tz/bNO005TD5+ChbpeEuWsTmsvVBImg4ON4EJVv15ghS4h/F7d2gNnjeJtWY\nob7QTA4cqwzn1C2JN3uNXSgudGi1HgLnNB4J4tbs/7fWXVOQGgASMJJ18ISCVNEY\nCm+123Y3bmKVRCmtdobb+w47FCSKxFGhhIt6rPehMYHWLD/fn+9FQ4YXl6yFT9+r\nI197sl30WVQuttD6R9e2Dtp7C8fxurY+RaKQWWnL9SSw6uR/Lwfv+54wbIl02/6j\ntO5I6QDFIny5yoz5XM+sIpOm1lsCWD8sR+bXZ8EShOaTToCa3nhA6awKr+8abk+0\n0eaFU8m1AgMBAAECggEAKRmt2CwEJNSQfxm9JcS3vOSqW76HU49Vo6C+kQtACXy/\nN2sZrjS0S6VmnhsfIKlBuotQF4YelseqxrUGzOSd5HCUnmVnqTxKaxtIi3wjFW66\nFM2xLYKyj5/LlxHFd7uNdotRbAXaMWwqOvsP4LivzCkdXIdBxzfuJsZ7ukAoJn2I\nMx4aXAQLte3ylD+4mB8eqjV/Sbf/GP7vpKNWbDIK/jBofOw28sEbwL9W9GI/5eWP\nvGcitEzYs9HbqubfH2O+XIL1xJXOX/cssFUeA8upNR05/Jilm2H02iavKvg5SYbd\n2wciODFLZ+ie3ElgMqZ1cysHKsYA1rsom4JlkCyLUwKBgQD+EiNOKOl1cDhWzPv7\njRxvFEPmtj+Zxq8jt4fYO/PJXHida81dBGou0rfija1qxDdaPG0ZU/PO6jl7CZ8k\nBqEsRPXBZDTzWeaF/We6EIvPd8TwsiNry49TibPl0/kI5h9G9/AjmDgF+bDG0p4S\nB0xLam9hNMy8IGCE7UiDKCzOqwKBgQDzP5KsYMtZrCJaTtQsJIpAUZNZU53rax8k\nYWVg64FuB7uqmtXQ0PtTj9UH4Tn3zpInxom7UxlZkThvAIxIKC8DLwCIdCrC7ptJ\nGPsuk/EaM9pcdYqDdbJnxOBiF8HLE+y3mJMo2QbsHNTusEpF8RCnHbVgoCXz5dQg\nI7cFwuhJHwKBgQC8naCCLNMsMRRSNDk5RUf/mq7R/yh2M87fmCeMOu2/5htQ2rAJ\nxvZBLoP+96jvYx2oqsVfkTilurLTiZAQQa+zWrqLSKYapvoBLN+tfQ0eB084VTcA\nlo0fulHIZDY0CgrcN8KZ2i51GSnIYKGixrI4JprrMjRv0SV2aWV0oQWqowKBgQCa\nItaWVF+G2wSJpRndPuo8B3UPTWTsIF0DeJP87j59snjAioyiXUpkkOe0rotE86i5\ne50bDnUpxFO2QuqhbpUbt1TnInVWQEw17ZZ81VIaAHGF1RWIZ7Q8/QwSHGu4e0+s\npwnZAGzagQqMlTj7SN38h16/c7uY6TGZjAgVpoP6kQKBgENICMdzffSRE2Oxc+67\n9+VmJ+TxnjBOUifmYdQxUFKEvTV2FZeIJCL6Q0todDJsDQ73dls3SdT/QiRCZda6\nbT2RE6383zqsb96WnIk4fr3JsOtC8wcKmklzzXW8E2oD6p379sn5xmOhDXJSrbla\nkSiI42h2CGbQ1XbiYItYPV5M\n-----END PRIVATE KEY-----\n",
+  "client_email": "triptails@weighty-bounty-444706-c7.iam.gserviceaccount.com",
+  "client_id": "105751448585429401493",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/triptails%40weighty-bounty-444706-c7.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

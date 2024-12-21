@@ -6,6 +6,7 @@ import bodyParser from 'body-parser';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import tripsRouter from './routes/trips.js';  // Import default export
+import driveRouter from './routes/drive.js'; // Import drive routes
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,7 +23,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Use tripsRouter for handling routes under '/trips'
 app.use('/trips', tripsRouter);
-
+app.use('/drive', driveRouter); // Use the drive route
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

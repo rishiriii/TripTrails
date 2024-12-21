@@ -28,7 +28,7 @@ document.getElementById('add-stop-btn').addEventListener('click', () => {
   }
 });
 
-// Submit event for the form
+// Submit event for the trip form
 document.getElementById('add-trip-form').addEventListener('submit', async (event) => {
   event.preventDefault();
 
@@ -44,13 +44,54 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
   // Include the stops array in the trip data
   newTrip.stops = stops;
 
-  // Send the new trip data to the server
-  await fetch('/trips', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(newTrip),
-  });
+  // Send the trip data to the server
+  try {
+    const tripResponse = await fetch('/trips', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTrip),
+    });
+
+    if (!tripResponse.ok) {
+      throw new Error('Failed to save trip data.');
+    }
+
+    console.log('Trip saved successfully.');
+    alert('Trip added successfully!');
+  } catch (error) {
+    console.error('Error saving trip:', error.message);
+    alert('Failed to save trip. Please try again.');
+    return; // Stop here if trip saving fails
+  }
+
+  // If trip saving succeeds, handle file upload
+  const fileInput = document.getElementById('file');
+  const file = fileInput?.files[0]; // Optional chaining to check if the file input exists
+
+  if (file) {
+    const uploadFormData = new FormData();
+    uploadFormData.append('file', file);
+
+    try {
+      const uploadResponse = await fetch('http://localhost:3000/drive/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('File upload failed.');
+      }
+
+      const result = await uploadResponse.json();
+      console.log('File uploaded successfully:', result);
+      alert(`File uploaded successfully. File ID: ${result.fileId}`);
+    } catch (error) {
+      console.error('Error uploading file:', error.message);
+      alert('File upload failed. Please check the console for more details.');
+    }
+  }
 
   // Redirect back to homepage
   window.location.href = 'Home.html';
 });
+

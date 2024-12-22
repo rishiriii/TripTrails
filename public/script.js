@@ -14,17 +14,21 @@ async function loadTrips() {
       tripCard.className = 'trip-card';
 
       tripCard.innerHTML = `
-        <div class="card-image">
-          <img src="${trip.photos && trip.photos[0] ? trip.photos[0] : 'placeholder.jpg'}" alt="Trip Photo">
-        </div>
-        <div class="card-content">
-          <h3>${trip.title || 'Untitled Trip'}</h3>
-          <p>${trip.days || 0} Days / ${trip.nights || 0} Nights</p>
-          <p>Cost: $${trip.expense || 0}</p>
-          <p>Stops: ${trip.stops ? trip.stops.length : 0}</p> <!-- Show number of stops -->
-          <button class="delete-trip-btn" data-id="${trip.id}">Delete</button>
-        </div>
-      `;
+  <div class="card-image">
+    <img 
+      src="${trip.bannerPhoto || 'placeholder.jpg'}" 
+      alt="Banner Photo"
+      style="width: 100%; height: 150px; object-fit: cover; border-radius: 10px;">
+  </div>
+  <div class="card-content">
+    <h3>${trip.title || 'Untitled Trip'}</h3>
+    <p>${trip.days || 0} Days / ${trip.nights || 0} Nights</p>
+    <p>Cost: $${trip.expense || 0}</p>
+    <p>Stops: ${trip.stops ? trip.stops.length : 0}</p>
+    <button class="delete-trip-btn" data-id="${trip.id}">Delete</button>
+  </div>
+`;
+
 
       // Add event listener to open trip details
       tripCard.addEventListener('click', () => {

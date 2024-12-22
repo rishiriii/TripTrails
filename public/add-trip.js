@@ -1,4 +1,8 @@
 // Stops array to hold the list of stops
+import { storage } from '../firebase.js'; // Import Firebase Storage
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+// Stops array to hold the list of stops
 const stops = [];
 
 // Event listener to handle adding stops
@@ -40,11 +44,10 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
   const start = formData.get('start');
   const end = formData.get('end');
   newTrip.title = `${start} - ${end}`;
-
-  // Include the stops array in the trip data
-  newTrip.stops = stops;
+  newTrip.stops = stops; // Include the stops array in the trip data
 
   // Send the trip data to the server
+  let tripId;
   try {
     const tripResponse = await fetch('/trips', {
       method: 'POST',
@@ -52,11 +55,11 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
       body: JSON.stringify(newTrip),
     });
 
-    if (!tripResponse.ok) {
-      throw new Error('Failed to save trip data.');
-    }
+    if (!tripResponse.ok) throw new Error('Failed to save trip data.');
 
-    console.log('Trip saved successfully.');
+    const tripData = await tripResponse.json();
+    tripId = tripData.id; // Store the trip ID for later use
+    console.log('Trip saved successfully.', tripData);
     alert('Trip added successfully!');
   } catch (error) {
     console.error('Error saving trip:', error.message);
@@ -64,34 +67,35 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
     return; // Stop here if trip saving fails
   }
 
-  // If trip saving succeeds, handle file upload
+  // Handle banner photo upload
   const fileInput = document.getElementById('file');
   const file = fileInput?.files[0]; // Optional chaining to check if the file input exists
 
-  if (file) {
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', file);
-
+  if (file && tripId) {
+    const fileRef = ref(storage, `banners/${tripId}_${file.name}`);
     try {
-      const uploadResponse = await fetch('http://localhost:3000/drive/upload', {
-        method: 'POST',
-        body: uploadFormData,
+      // Upload the file to Firebase Storage
+      const snapshot = await uploadBytes(fileRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      // Update the trip with the bannerPhoto URL
+      const patchResponse = await fetch(`/trips/${tripId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bannerPhoto: downloadURL }),
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error('File upload failed.');
+      if (!patchResponse.ok) {
+        throw new Error('Failed to update trip with banner photo.');
       }
 
-      const result = await uploadResponse.json();
-      console.log('File uploaded successfully:', result);
-      alert(`File uploaded successfully. File ID: ${result.fileId}`);
+      alert('Trip and banner photo added successfully!');
     } catch (error) {
-      console.error('Error uploading file:', error.message);
-      alert('File upload failed. Please check the console for more details.');
+      console.error('Error uploading banner photo:', error.message);
+      alert('Failed to upload banner photo. Please try again.');
     }
   }
 
   // Redirect back to homepage
   window.location.href = 'Home.html';
 });
-

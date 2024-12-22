@@ -51,7 +51,11 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       fields: 'id',
     });
 
-    console.log('File uploaded successfully:', response.data);
+    res.status(200).json({
+      message: 'File uploaded successfully',
+      fileId: response.data.id, // Ensure this returns the file ID only
+    });
+    
 
     // Clean up the temporary file
     fs.unlinkSync(file.path);

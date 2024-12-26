@@ -36,11 +36,11 @@ tripsRouter.post('/', async (req, res) => {
     !tripData.nights ||
     !tripData.expense ||
     !tripData.description ||
-    !tripData.bannerPhoto // Ensure bannerPhoto is included
+    !tripData.bannerPhoto // Ensure this is validated
   ) {
     return res.status(400).send({ message: 'Missing required trip fields' });
   }
-
+  
   try {
     const docRef = await addDoc(collection(db, 'trips'), tripData);
     res.status(201).send({

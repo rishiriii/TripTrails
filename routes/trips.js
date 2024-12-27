@@ -10,8 +10,12 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref, deleteObject } from 'firebase/storage';
 import { db } from '../firebase.js';
+import verifyToken from '../middleware/verifyToken.js';
 
 const tripsRouter = express.Router();
+
+// Apply token verification middleware to all /trips routes
+tripsRouter.use(verifyToken);
 
 // Middleware to check Firebase connection
 const checkDbConnection = (req, res, next) => {
@@ -36,13 +40,17 @@ tripsRouter.post('/', async (req, res) => {
     !tripData.nights ||
     !tripData.expense ||
     !tripData.description ||
-    !tripData.bannerPhoto // Ensure this is validated
+    !tripData.bannerPhoto // Ensure bannerPhoto exists
   ) {
     return res.status(400).send({ message: 'Missing required trip fields' });
   }
-  
+
   try {
-    const docRef = await addDoc(collection(db, 'trips'), tripData);
+    const docRef = await addDoc(collection(db, 'trips'), {
+      ...tripData,
+      userId: req.user.uid, // Attach authenticated user ID to the trip
+    });
+
     res.status(201).send({
       id: docRef.id,
       message: 'Trip added successfully',
@@ -114,7 +122,7 @@ tripsRouter.delete('/:id', async (req, res) => {
     // Delete the banner photo from Firebase Storage
     if (tripData.bannerPhoto) {
       const storage = getStorage();
-      const photoRef = ref(storage, tripData.bannerPhoto); // Assume `bannerPhoto` contains the full path
+      const photoRef = ref(storage, tripData.bannerPhoto); // Ensure bannerPhoto is a valid path
 
       try {
         await deleteObject(photoRef);

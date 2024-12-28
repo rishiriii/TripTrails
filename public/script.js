@@ -10,7 +10,7 @@ async function loadTrips() {
     }
 
     // Get the Firebase ID token
-    const token = await user.getIdToken();
+    const token = await user.getIdToken(true); // Ensure the token is fresh
 
     // Fetch trips from the backend with the token in the Authorization header
     const response = await fetch('/trips', {
@@ -22,7 +22,8 @@ async function loadTrips() {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch trips');
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch trips');
     }
 
     const trips = await response.json();
@@ -91,7 +92,7 @@ function addDeleteFunctionality() {
         }
 
         // Get the Firebase ID token
-        const token = await user.getIdToken();
+        const token = await user.getIdToken(true);
 
         // Send delete request with the token
         const response = await fetch(`/trips/${tripId}`, {
@@ -103,13 +104,13 @@ function addDeleteFunctionality() {
           body: JSON.stringify({ bannerPhoto }), // Send banner photo URL to backend
         });
 
-        if (response.ok) {
-          alert('Trip deleted successfully');
-          loadTrips(); // Refresh the list
-        } else {
-          alert('Failed to delete trip');
-          console.error('Delete failed:', response.statusText);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to delete trip');
         }
+
+        alert('Trip deleted successfully');
+        loadTrips(); // Refresh the list
       } catch (error) {
         alert('Error deleting trip');
         console.error('Error:', error.message);
@@ -122,7 +123,7 @@ function addDeleteFunctionality() {
 onAuthStateChanged(auth, (user) => {
   if (!user) {
     alert('You must be logged in to access this page!');
-    window.location.href = 'login.html';
+    window.location.href = 'login.html'; // Redirect if not authenticated
   } else {
     loadTrips();
   }

@@ -64,7 +64,7 @@ function displayProfile(user, userProfile) {
 // Monitor authentication state
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    alert('You must be logged in to access this page!');
+    
     window.location.href = 'login.html'; // Redirect to login
     return;
   }

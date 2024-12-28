@@ -1,15 +1,5 @@
 import express from 'express';
-import {
-  collection,
-  addDoc,
-  getDocs,
-  getDoc,
-  deleteDoc,
-  doc,
-  updateDoc,
-} from 'firebase/firestore';
-import { getStorage, ref, deleteObject } from 'firebase/storage';
-import { db } from '../firebase.js';
+import { db } from '../firebaseAdmin.js';
 import verifyToken from '../middleware/verifyToken.js';
 
 const tripsRouter = express.Router();
@@ -40,15 +30,16 @@ tripsRouter.post('/', async (req, res) => {
     !tripData.nights ||
     !tripData.expense ||
     !tripData.description ||
-    !tripData.bannerPhoto // Ensure bannerPhoto exists
+    !tripData.bannerPhoto
   ) {
     return res.status(400).send({ message: 'Missing required trip fields' });
   }
 
   try {
-    const docRef = await addDoc(collection(db, 'trips'), {
+    const tripsRef = db.collection('trips');
+    const docRef = await tripsRef.add({
       ...tripData,
-      userId: req.user.uid, // Attach authenticated user ID to the trip
+      userId: req.user.uid,
     });
 
     res.status(201).send({
@@ -65,16 +56,16 @@ tripsRouter.post('/', async (req, res) => {
 // Get all trips
 tripsRouter.get('/', async (req, res) => {
   try {
-    const tripsCollection = collection(db, 'trips');
-    const querySnapshot = await getDocs(tripsCollection);
+    const tripsRef = db.collection('trips');
+    const snapshot = await tripsRef.get();
 
-    if (querySnapshot.empty) {
+    if (snapshot.empty) {
       return res.json([]);
     }
 
-    const trips = querySnapshot.docs.map((doc) => ({
+    const trips = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data(), // Includes bannerPhoto and other fields
+      ...doc.data(),
     }));
 
     res.json(trips);
@@ -89,15 +80,16 @@ tripsRouter.get('/:id', async (req, res) => {
   const tripId = req.params.id;
 
   try {
-    const tripDoc = await getDoc(doc(db, 'trips', tripId));
+    const tripRef = db.collection('trips').doc(tripId);
+    const tripDoc = await tripRef.get();
 
-    if (!tripDoc.exists()) {
+    if (!tripDoc.exists) {
       return res.status(404).send({ message: 'Trip not found' });
     }
 
     res.json({
       id: tripDoc.id,
-      ...tripDoc.data(), // Includes bannerPhoto and other fields
+      ...tripDoc.data(),
     });
   } catch (error) {
     console.error('Error fetching trip:', error.message);
@@ -110,32 +102,19 @@ tripsRouter.delete('/:id', async (req, res) => {
   const tripId = req.params.id;
 
   try {
-    const tripDocRef = doc(db, 'trips', tripId);
-    const tripDoc = await getDoc(tripDocRef);
+    const tripRef = db.collection('trips').doc(tripId);
+    const tripDoc = await tripRef.get();
 
-    if (!tripDoc.exists()) {
+    if (!tripDoc.exists) {
       return res.status(404).send({ message: 'Trip not found' });
     }
 
     const tripData = tripDoc.data();
 
-    // Delete the banner photo from Firebase Storage
-    if (tripData.bannerPhoto) {
-      const storage = getStorage();
-      const photoRef = ref(storage, tripData.bannerPhoto); // Ensure bannerPhoto is a valid path
-
-      try {
-        await deleteObject(photoRef);
-        console.log(`Deleted banner photo: ${tripData.bannerPhoto}`);
-      } catch (error) {
-        console.error('Error deleting banner photo from storage:', error.message);
-      }
-    }
-
     // Delete the trip from Firestore
-    await deleteDoc(tripDocRef);
+    await tripRef.delete();
 
-    res.status(200).send({ message: 'Trip and associated banner photo deleted successfully' });
+    res.status(200).send({ message: 'Trip deleted successfully' });
   } catch (error) {
     console.error('Error deleting trip:', error.message);
     res.status(500).send({ message: 'Error deleting trip', error: error.message });
@@ -145,18 +124,18 @@ tripsRouter.delete('/:id', async (req, res) => {
 // Update specific fields in a trip
 tripsRouter.patch('/:id', async (req, res) => {
   const tripId = req.params.id;
-  const updateData = req.body; // Expecting { bannerPhoto: "url" }
+  const updateData = req.body;
 
   try {
-    const tripDocRef = doc(db, 'trips', tripId);
-    const tripDoc = await getDoc(tripDocRef);
+    const tripRef = db.collection('trips').doc(tripId);
+    const tripDoc = await tripRef.get();
 
-    if (!tripDoc.exists()) {
+    if (!tripDoc.exists) {
       return res.status(404).send({ message: 'Trip not found' });
     }
 
     // Update the trip document
-    await updateDoc(tripDocRef, updateData);
+    await tripRef.update(updateData);
     res.status(200).send({ message: 'Trip updated successfully' });
   } catch (error) {
     console.error('Error updating trip:', error.message);

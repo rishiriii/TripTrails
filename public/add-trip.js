@@ -1,87 +1,113 @@
-import { storage } from '../firebase.js'; // Import Firebase Storage
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Correct Firebase Storage methods
+import { auth } from '../firebase.js';
+import { storage } from '../firebase.js';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-// Stops array to hold the list of stops
 const stops = [];
 
-// Event listener to handle adding stops
 document.getElementById('add-stop-btn').addEventListener('click', () => {
-  const stopInput = document.getElementById('stop-input');
-  const stopValue = stopInput.value.trim();
+ const stopInput = document.getElementById('stop-input');
+ const stopValue = stopInput.value.trim();
 
-  if (stopValue) {
-    stops.push(stopValue); // Add the stop to the array
+ if (stopValue) {
+   stops.push(stopValue);
 
-    // Add the stop to the UI
-    const stopListItem = document.createElement('div');
-    stopListItem.textContent = stopValue;
-    stopListItem.classList.add('stop-item');
+   const stopListItem = document.createElement('div');
+   stopListItem.textContent = stopValue;
+   stopListItem.classList.add('stop-item');
 
-    const deleteButton = document.createElement('button');
-    deleteButton.textContent = 'Remove';
-    deleteButton.addEventListener('click', () => {
-      stops.splice(stops.indexOf(stopValue), 1); // Remove stop from array
-      stopListItem.remove(); // Remove from UI
-    });
+   const deleteButton = document.createElement('button');
+   deleteButton.textContent = 'Remove';
+   deleteButton.addEventListener('click', () => {
+     stops.splice(stops.indexOf(stopValue), 1);
+     stopListItem.remove();
+   });
 
-    stopListItem.appendChild(deleteButton);
-    document.getElementById('stops-container').appendChild(stopListItem);
+   stopListItem.appendChild(deleteButton);
+   document.getElementById('stops-container').appendChild(stopListItem);
 
-    stopInput.value = ''; // Clear the input field
-  }
+   stopInput.value = '';
+ }
 });
 
-// Submit event for the trip form
 document.getElementById('add-trip-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
+ event.preventDefault();
 
-  // Gather form data
-  const formData = new FormData(event.target);
-  const newTrip = Object.fromEntries(formData.entries());
+ try {
+   // Get current user and token
+   const user = auth.currentUser;
+   if (!user) {
+     throw new Error('Please log in to add a trip');
+   }
+   const token = await user.getIdToken();
 
-  // Automatically generate the title
-  const start = formData.get('start');
-  const end = formData.get('end');
-  newTrip.title = `${start} - ${end}`;
+   const formData = new FormData(event.target);
+   const newTrip = {
+     start: formData.get('start'), // Start location
+     end: formData.get('end'), // End location
+     days: parseInt(formData.get('days')),
+     nights: parseInt(formData.get('nights')),
+     expense: parseFloat(formData.get('expense')),
+     description: formData.get('description'),
+     visibility: formData.get('visibility'),
+     stops: stops,
+     title: '', // Will be generated below
+   };
 
-  // Add stops array
-  newTrip.stops = stops;
+   // Generate title from start and end locations
+   newTrip.title = `${newTrip.start} to ${newTrip.end}`;
 
-  // Handle file upload for banner photo
-  const fileInput = document.getElementById('file');
-  const file = fileInput?.files[0];
+   // Validate required fields
+   const requiredFields = ['start', 'end', 'days', 'nights', 'expense', 'description', 'visibility'];
+   const missingFields = requiredFields.filter(field => !newTrip[field]);
+   
+   if (missingFields.length > 0) {
+     throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+   }
 
-  if (file) {
-    const storageRef = ref(storage, `banners/${file.name}`); // Create a reference in Firebase Storage
-    try {
-      const snapshot = await uploadBytes(storageRef, file); // Upload the file
-      const bannerPhotoURL = await getDownloadURL(snapshot.ref); // Get the download URL
+   // Handle file upload
+   const fileInput = document.getElementById('file');
+   const file = fileInput?.files[0];
 
-      // Add bannerPhoto URL to the trip data
-      newTrip.bannerPhoto = bannerPhotoURL;
-    } catch (error) {
-      console.error('Error uploading banner photo:', error.message);
-      alert('Failed to upload banner photo. Please try again.');
-      return; // Stop form submission if the upload fails
-    }
-  }
+   if (!file) {
+     throw new Error('Banner photo is required');
+   }
 
-  // Send trip data to the backend
-  try {
-    const response = await fetch('/trips', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newTrip),
-    });
+   // Upload the file
+   const fileName = `${Date.now()}-${file.name}`;
+   const storageRef = ref(storage, `banners/${user.uid}/${fileName}`);
+   
+   const snapshot = await uploadBytes(storageRef, file);
+   const bannerPhotoURL = await getDownloadURL(snapshot.ref);
+   newTrip.bannerPhoto = bannerPhotoURL;
 
-    if (!response.ok) {
-      throw new Error('Failed to save trip data.');
-    }
+   // Log the trip data being sent
+   console.log('Sending trip data:', newTrip);
 
-    alert('Trip added successfully!');
-    window.location.href = 'Home.html'; // Redirect to home page
-  } catch (error) {
-    console.error('Error saving trip:', error.message);
-    alert('Failed to save trip. Please try again.');
-  }
+   const response = await fetch('/trips', {
+     method: 'POST',
+     headers: {
+       'Content-Type': 'application/json',
+       'Authorization': `Bearer ${token}`
+     },
+     body: JSON.stringify(newTrip),
+   });
+
+   if (!response.ok) {
+     const errorData = await response.json();
+     throw new Error(errorData.message || 'Failed to save trip data.');
+   }
+
+   alert('Trip added successfully!');
+   window.location.href = 'home.html';
+ } catch (error) {
+   console.error('Error saving trip:', error);
+   alert(error.message || 'Failed to save trip. Please try again.');
+ }
+});
+
+// Check authentication on page load
+auth.onAuthStateChanged((user) => {
+ if (!user) {
+   window.location.href = 'login.html';
+ }
 });

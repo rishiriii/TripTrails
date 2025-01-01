@@ -7,35 +7,25 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Trip Details</h1>
-  <div id="trip-details">
-    <h2 id="trip-title">Loading...</h2>
-    <p id="trip-start-end"></p>
-    <p id="trip-days"></p>
-    <p id="trip-expense"></p>
-    <p id="trip-description"></p>
-    
-    <h3>Trip Route</h3>
-    <div id="trip-route">
-      <div class="start-stop-line">
-        <div class="start-marker">0</div>
-        <div id="stops-container"></div>
-      </div>
-    </div>
+  <div id="trip-banner"></div>
+  <h1 id="trip-title"></h1>
+  <p id="trip-start-end"></p>
+  <p id="trip-days"></p>
+  <p id="trip-expense"></p>
+  <p id="trip-description"></p>
 
-    <h3>Stops</h3>
-    <ul id="trip-stops">
-      <!-- Stops will be dynamically populated here -->
-    </ul>
-    
-    <div id="trip-photos">
-      <!-- Photos will be dynamically populated here -->
-    </div>
-  </div>
+  <h3>Stops</h3>
+  <ul id="trip-stops"></ul>
 
-  <!-- External JavaScript file -->
-  <script src="trip-details.js"></script>
+  <h3>Photos</h3>
+  <div id="trip-photos"></div>
+
+  <p id="trip-username" style="margin-top: 20px; font-weight: bold;"></p>
+
+  <script type="module" src="trip-details.js"></script>
+  <script type="module" src="my-trips.js"></script>
 </body>
 </html>
+
 
 

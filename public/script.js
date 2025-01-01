@@ -1,6 +1,19 @@
 import { auth } from '../firebase.js'; // Import Firebase Auth
 import { onAuthStateChanged } from 'firebase/auth';
 
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Monitor auth state and load trips
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = 'login.html';
+    } else {
+      createProfileDropdown();
+      loadTrips();
+    }
+  });
+});
+
 async function loadTrips() {
   try {
     const user = auth.currentUser;
@@ -122,8 +135,7 @@ function addDeleteFunctionality() {
 // Monitor auth state and load trips
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-    alert('You must be logged in to access this page!');
-    window.location.href = 'login.html'; // Redirect if not authenticated
+    window.location.href = 'login.html';
   } else {
     loadTrips();
   }

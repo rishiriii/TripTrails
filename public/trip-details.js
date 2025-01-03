@@ -1,12 +1,30 @@
-// Import Firebase auth
 import { auth } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 
-// Extract the trip ID from the URL
 const urlParams = new URLSearchParams(window.location.search);
 const tripId = urlParams.get('id');
 
-// Fetch trip details based on the trip ID
+function createMediaElement(url) {
+  const container = document.createElement('div');
+  container.className = 'media-item';
+
+  if (url.match(/\.(mp4|webm|ogg)$/i)) {
+    const video = document.createElement('video');
+    video.src = url;
+    video.controls = true;
+    video.className = 'media-content';
+    container.appendChild(video);
+  } else {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'Trip Media';
+    img.className = 'media-content';
+    container.appendChild(img);
+  }
+
+  return container;
+}
+
 async function loadTripDetails() {
   if (!tripId) {
     document.getElementById('trip-title').textContent = 'No trip ID provided';
@@ -14,91 +32,69 @@ async function loadTripDetails() {
   }
 
   try {
-    // Ensure the user is authenticated
     const user = auth.currentUser;
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
+    if (!user) throw new Error('User not authenticated');
 
-    // Get the Firebase ID token
     const token = await user.getIdToken();
-
-    // Fetch trip details with authorization
     const response = await fetch(`/trips/${tripId}`, {
-      method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch trip details');
-    }
+    if (!response.ok) throw new Error('Failed to fetch trip details');
 
     const trip = await response.json();
 
-    // Populate the page with the banner photo
+    // Populate banner
     const bannerContainer = document.getElementById('trip-banner');
     if (trip.bannerPhoto) {
       bannerContainer.innerHTML = `
-        <img 
-          src="${trip.bannerPhoto}" 
-          alt="Banner Photo" 
-          style="width: 100%; height: 300px; object-fit: cover; border-radius: 10px;">
-      `;
-    } else {
-      bannerContainer.innerHTML = `<p>No banner photo available</p>`;
+        <img src="${trip.bannerPhoto}" 
+             alt="Trip Banner" 
+             style="width: 100%; height: 300px; object-fit: cover;">`;
     }
 
-    // Populate the page with trip details
+    // Populate basic details
     document.getElementById('trip-title').textContent = trip.title || 'No Title';
-    document.getElementById('trip-start-end').textContent = `${trip.start || 'Unknown'} to ${trip.end || 'Unknown'}`;
-    document.getElementById('trip-days').textContent = `${trip.days || 0} Days / ${trip.nights || 0} Nights`;
-    document.getElementById('trip-expense').textContent = `Cost: $${trip.expense || 0}`;
-    document.getElementById('trip-description').textContent = trip.description || 'No description available';
+    document.getElementById('trip-start-end').textContent = 
+      `${trip.start || 'Unknown'} to ${trip.end || 'Unknown'}`;
+    document.getElementById('trip-days').textContent = 
+      `${trip.days || 0} Days / ${trip.nights || 0} Nights`;
+    document.getElementById('trip-expense').textContent = 
+      `Cost: $${trip.expense || 0}`;
+    document.getElementById('trip-description').textContent = 
+      trip.description || 'No description available';
 
-    // Handle stops and route display
+    // Populate stops
     const stopsList = document.getElementById('trip-stops');
-    const stopsContainer = document.getElementById('stops-container');
-    if (trip.stops && trip.stops.length > 0) {
-      // Add stops to the list
-      stopsList.innerHTML = trip.stops.map((stop) => `<li>${stop}</li>`).join('');
+    stopsList.innerHTML = trip.stops?.length 
+      ? trip.stops.map(stop => `<li>${stop}</li>`).join('')
+      : '<li>No stops available</li>';
+
+    // Populate media gallery
+    const mediaContainer = document.getElementById('media-container');
+    if (trip.mediaUrls?.length) {
+      trip.mediaUrls.forEach(url => {
+        mediaContainer.appendChild(createMediaElement(url));
+      });
     } else {
-      stopsList.innerHTML = '<li>No stops available</li>';
+      mediaContainer.innerHTML = '<p>No additional media available</p>';
     }
 
-    // Handle photos
-    const photosContainer = document.getElementById('trip-photos');
-    if (trip.photos && trip.photos.length > 0) {
-      photosContainer.innerHTML = trip.photos
-        .map(
-          (photo) =>
-            `<img src="${photo}" alt="Trip Photo" style="width: 100%; height: auto; border-radius: 10px;">`
-        )
-        .join('');
-    } else {
-      photosContainer.textContent = 'No photos available';
-    }
-
-    // Display the username of the trip poster at the bottom
-    const usernameContainer = document.getElementById('trip-username');
-    usernameContainer.textContent = `Posted by: ${trip.userEmail || 'Unknown user'}`;
+    document.getElementById('trip-username').textContent = 
+      `Posted by: ${trip.userEmail || 'Unknown user'}`;
   } catch (error) {
-    console.error('Error fetching trip details:', error.message);
-    document.getElementById('trip-title').textContent = 'Trip not found';
-    document.getElementById('trip-description').textContent = 'Unable to load trip details. Please try again later.';
+    console.error('Error:', error);
+    document.getElementById('trip-title').textContent = 'Failed to load trip';
   }
 }
 
-// Monitor auth state and load trip details
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, user => {
   if (!user) {
-    alert('You must be logged in to access this page!');
-    window.location.href = 'login.html'; // Redirect to login if not authenticated
+    window.location.href = 'login.html';
   } else {
-    loadTripDetails(); // Load trip details if the user is authenticated
+    loadTripDetails();
   }
 });
-
-

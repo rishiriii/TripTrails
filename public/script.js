@@ -1,14 +1,11 @@
-import { auth } from '../firebase.js'; // Import Firebase Auth
+import { auth } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 
-
 document.addEventListener('DOMContentLoaded', () => {
-  // Monitor auth state and load trips
   onAuthStateChanged(auth, (user) => {
     if (!user) {
       window.location.href = 'login.html';
     } else {
-      createProfileDropdown();
       loadTrips();
     }
   });
@@ -17,15 +14,11 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadTrips() {
   try {
     const user = auth.currentUser;
-
     if (!user) {
       throw new Error('User not authenticated');
     }
 
-    // Get the Firebase ID token
-    const token = await user.getIdToken(true); // Ensure the token is fresh
-
-    // Fetch trips from the backend with the token in the Authorization header
+    const token = await user.getIdToken(true);
     const response = await fetch('/trips', {
       method: 'GET',
       headers: {
@@ -41,9 +34,12 @@ async function loadTrips() {
 
     const trips = await response.json();
     const tripList = document.getElementById('trip-list');
-    tripList.innerHTML = ''; // Clear existing content
+    tripList.innerHTML = '';
 
     trips.forEach((trip) => {
+      const startDate = new Date(trip.startDate).toLocaleDateString();
+      const endDate = new Date(trip.endDate).toLocaleDateString();
+
       const tripCard = document.createElement('div');
       tripCard.className = 'trip-card';
 
@@ -56,7 +52,8 @@ async function loadTrips() {
         </div>
         <div class="card-content">
           <h3>${trip.title || 'Untitled Trip'}</h3>
-          <p>${trip.days || 0} Days / ${trip.nights || 0} Nights</p>
+          
+          <p>${trip.days} Days / ${trip.nights} Nights</p>
           <p>Cost: $${trip.expense || 0}</p>
           <p>Stops: ${trip.stops ? trip.stops.length : 0}</p>
           ${
@@ -67,15 +64,15 @@ async function loadTrips() {
         </div>
       `;
 
-      // Add event listener to open trip details
-      tripCard.addEventListener('click', () => {
-        window.location.href = `trip-details.html?id=${trip.id}`;
+      tripCard.addEventListener('click', (e) => {
+        if (!e.target.matches('.delete-trip-btn')) {
+          window.location.href = `trip-details.html?id=${trip.id}`;
+        }
       });
 
       tripList.appendChild(tripCard);
     });
 
-    // Add delete button functionality
     addDeleteFunctionality();
   } catch (error) {
     console.error('Error loading trips:', error.message);
@@ -84,37 +81,29 @@ async function loadTrips() {
   }
 }
 
-// Add event listeners to delete buttons
 function addDeleteFunctionality() {
   document.querySelectorAll('.delete-trip-btn').forEach((button) => {
     button.addEventListener('click', async (event) => {
-      event.stopPropagation(); // Prevent card click event
-      event.preventDefault(); // Prevent default button action
+      event.stopPropagation();
+      event.preventDefault();
 
       const tripId = button.dataset.id;
       const bannerPhoto = button.dataset.banner;
 
-      const confirmDelete = confirm('Are you sure you want to delete this trip?');
-      if (!confirmDelete) return;
+      if (!confirm('Are you sure you want to delete this trip?')) return;
 
       try {
         const user = auth.currentUser;
+        if (!user) throw new Error('User not authenticated');
 
-        if (!user) {
-          throw new Error('User not authenticated');
-        }
-
-        // Get the Firebase ID token
         const token = await user.getIdToken(true);
-
-        // Send delete request with the token
         const response = await fetch(`/trips/${tripId}`, {
           method: 'DELETE',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ bannerPhoto }), // Send banner photo URL to backend
+          body: JSON.stringify({ bannerPhoto }),
         });
 
         if (!response.ok) {
@@ -123,20 +112,13 @@ function addDeleteFunctionality() {
         }
 
         alert('Trip deleted successfully');
-        loadTrips(); // Refresh the list
+        loadTrips();
       } catch (error) {
-        alert('Error deleting trip');
         console.error('Error:', error.message);
+        alert('Error deleting trip');
       }
     });
   });
 }
 
-// Monitor auth state and load trips
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    window.location.href = 'login.html';
-  } else {
-    loadTrips();
-  }
-});
+export { loadTrips };

@@ -10,21 +10,28 @@
   <h1>Add a New Trip</h1>
   
   <form id="add-trip-form">
-
     <label>Start Location: <input type="text" name="start" required></label><br>
     <label>End Location: <input type="text" name="end" required></label><br>
-    <label>Days: <input type="number" name="days" required></label><br>
-    <label>Nights: <input type="number" name="nights" required></label><br>
+    <label>Start Date: <input type="date" name="startDate" required></label><br>
+    <label>End Date: <input type="date" name="endDate" required></label><br>
     <label>Expense: <input type="number" name="expense" required></label><br>
     <label>Description: <textarea name="description" required></textarea></label><br>
     
     <div id="stops-section">
       <h3>Stops</h3>
-      <div id="stops-container">
-        <!-- Stops will be appended here -->
-      </div>
+      <div id="stops-container"></div>
       <input type="text" id="stop-input" placeholder="Enter a stop" />
       <button type="button" id="add-stop-btn">Add Stop</button>
+    </div>
+    
+    <div id="media-section">
+      <h3>Media</h3>
+      <label>Banner Photo: <input type="file" id="banner-file" accept="image/*" required></label><br>
+      <div id="additional-media">
+        <h4>Additional Photos & Videos</h4>
+        <input type="file" id="media-files" multiple accept="image/*,video/*">
+        <div id="media-preview"></div>
+      </div>
     </div>
     
     <label>Visibility:
@@ -33,17 +40,10 @@
         <option value="private">Private</option>
       </select>
     </label><br>
-    <label>File: <input type="file" id="file"></label>
-  <button type="submit">Submit</button>
-  <br>
-
     
-    
-    
+    <button type="submit">Submit</button>
+  </form>
 
   <script type="module" src="add-trip.js"></script>
-    
-
-  </script>
 </body>
 </html>

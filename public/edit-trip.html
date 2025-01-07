@@ -14,19 +14,43 @@
     <h1>Edit Trip</h1>
     <form id="edit-trip-form">
       <label for="title">Title:</label>
-      <input type="text" id="title" name="title" required>
-      <label for="start">Start:</label>
+      <input type="text" id="title" name="title" readonly>
+      
+      <label for="start">Start Location:</label>
       <input type="text" id="start" name="start" required>
-      <label for="end">End:</label>
+      
+      <label for="end">End Location:</label>
       <input type="text" id="end" name="end" required>
-      <label for="days">Days:</label>
-      <input type="number" id="days" name="days" required>
-      <label for="nights">Nights:</label>
-      <input type="number" id="nights" name="nights" required>
+      
+      <label for="startDate">Start Date:</label>
+      <input type="date" id="startDate" name="startDate" required>
+      
+      <label for="endDate">End Date:</label>
+      <input type="date" id="endDate" name="endDate" required>
+      
+      <div class="trip-duration">
+        <p>Trip Duration: <span id="duration-display">0 days / 0 nights</span></p>
+      </div>
+      
       <label for="expense">Expense:</label>
       <input type="number" id="expense" name="expense" required>
+      
       <label for="description">Description:</label>
       <textarea id="description" name="description" required></textarea>
+
+      <div id="media-section">
+        <h3>Media</h3>
+        <div id="current-banner" class="media-preview"></div>
+        <label>Update Banner Photo:
+          <input type="file" id="banner-file" accept="image/*">
+        </label>
+
+        <div id="current-media" class="media-preview-grid"></div>
+        <h4>Add More Photos & Videos:</h4>
+        <input type="file" id="additional-media" multiple accept="image/*,video/*">
+        <div id="new-media-preview" class="media-preview-grid"></div>
+      </div>
+      
       <button type="submit">Save Changes</button>
     </form>
   </main>

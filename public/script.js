@@ -1,17 +1,31 @@
 import { auth } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 
+// Check if we're on a page that uses the trip list
+function hasTripList() {
+  return document.getElementById('trip-list') !== null;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   onAuthStateChanged(auth, (user) => {
     if (!user) {
       window.location.href = 'login.html';
     } else {
-      loadTrips();
+      // Only load trips if we're on a page with the trip list
+      if (hasTripList()) {
+        loadTrips();
+      }
     }
   });
 });
 
 async function loadTrips() {
+  const tripList = document.getElementById('trip-list');
+  if (!tripList) {
+    console.warn('Trip list element not found on this page');
+    return;
+  }
+
   try {
     const user = auth.currentUser;
     if (!user) {
@@ -33,13 +47,14 @@ async function loadTrips() {
     }
 
     const trips = await response.json();
-    const tripList = document.getElementById('trip-list');
     tripList.innerHTML = '';
 
-    trips.forEach((trip) => {
-      const startDate = new Date(trip.startDate).toLocaleDateString();
-      const endDate = new Date(trip.endDate).toLocaleDateString();
+    if (!trips || trips.length === 0) {
+      tripList.innerHTML = '<p>No trips found. Start by creating your first trip!</p>';
+      return;
+    }
 
+    trips.forEach((trip) => {
       const tripCard = document.createElement('div');
       tripCard.className = 'trip-card';
 
@@ -76,8 +91,12 @@ async function loadTrips() {
     addDeleteFunctionality();
   } catch (error) {
     console.error('Error loading trips:', error.message);
-    const tripList = document.getElementById('trip-list');
-    tripList.innerHTML = `<p>Failed to load trips. Please try again later.</p>`;
+    if (tripList) {
+      tripList.innerHTML = `
+        <p>Failed to load trips. Please try again later.</p>
+        <button onclick="window.location.reload()" class="retry-button">Retry</button>
+      `;
+    }
   }
 }
 

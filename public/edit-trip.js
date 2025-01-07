@@ -1,40 +1,183 @@
-import { auth } from '../firebase.js';
+import { auth, storage } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 
 const urlParams = new URLSearchParams(window.location.search);
 const tripId = urlParams.get('id');
+
+let currentTrip = null;
+let newMediaFiles = [];
+let removedMediaUrls = [];
+
+// Calculate trip duration from dates
+function calculateTripDuration(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const timeDiff = end.getTime() - start.getTime();
+  const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+  return {
+    days: daysDiff + 1,
+    nights: daysDiff
+  };
+}
+
+// Update duration display
+function updateDurationDisplay() {
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  
+  if (startDate && endDate) {
+    if (new Date(endDate) < new Date(startDate)) {
+      document.getElementById('duration-display').textContent = 'End date cannot be before start date';
+      return false;
+    }
+    
+    const { days, nights } = calculateTripDuration(startDate, endDate);
+    document.getElementById('duration-display').textContent = `${days} days / ${nights} nights`;
+    return true;
+  }
+  return false;
+}
+
+// Automatically update the title field based on "Start" and "End" locations
+function updateTitle() {
+  const start = document.getElementById('start').value || 'Unknown';
+  const end = document.getElementById('end').value || 'Unknown';
+  document.getElementById('title').value = `${start} - ${end}`;
+}
+
+function createMediaPreview(url, container, isVideo = false) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'media-preview-item';
+
+  if (isVideo) {
+    const video = document.createElement('video');
+    video.src = url;
+    video.controls = true;
+    video.style.maxWidth = '200px';
+    video.style.maxHeight = '200px';
+    wrapper.appendChild(video);
+  } else {
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.maxWidth = '200px';
+    img.style.maxHeight = '200px';
+    wrapper.appendChild(img);
+  }
+
+  const removeBtn = document.createElement('button');
+  removeBtn.textContent = 'Remove';
+  removeBtn.className = 'remove-media-btn';
+  removeBtn.onclick = () => {
+    wrapper.remove();
+    if (url.startsWith('http')) {
+      removedMediaUrls.push(url);
+    }
+  };
+
+  wrapper.appendChild(removeBtn);
+  container.appendChild(wrapper);
+}
 
 async function loadTrip(token) {
   try {
     const response = await fetch(`/trips/${tripId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const trip = await response.json();
+    currentTrip = await response.json();
 
-    // Populate the form with trip details
-    document.getElementById('title').value = trip.title || '';
-    document.getElementById('start').value = trip.start || '';
-    document.getElementById('end').value = trip.end || '';
-    document.getElementById('days').value = trip.days || 0;
-    document.getElementById('nights').value = trip.nights || 0;
-    document.getElementById('expense').value = trip.expense || 0;
-    document.getElementById('description').value = trip.description || '';
+    // Populate form fields
+    document.getElementById('start').value = currentTrip.start || '';
+    document.getElementById('end').value = currentTrip.end || '';
+    document.getElementById('startDate').value = currentTrip.startDate || '';
+    document.getElementById('endDate').value = currentTrip.endDate || '';
+    document.getElementById('expense').value = currentTrip.expense || 0;
+    document.getElementById('description').value = currentTrip.description || '';
+
+    // Update duration display
+    updateDurationDisplay();
+
+    // Show current banner
+    if (currentTrip.bannerPhoto) {
+      const bannerContainer = document.getElementById('current-banner');
+      createMediaPreview(currentTrip.bannerPhoto, bannerContainer);
+    }
+
+    // Show current media
+    if (currentTrip.mediaUrls && currentTrip.mediaUrls.length > 0) {
+      const mediaContainer = document.getElementById('current-media');
+      currentTrip.mediaUrls.forEach(url => {
+        const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg)$/);
+        createMediaPreview(url, mediaContainer, isVideo);
+      });
+    }
+
+    updateTitle();
   } catch (error) {
     console.error('Error loading trip:', error.message);
     alert('Failed to load trip details. Please try again later.');
   }
 }
 
+// Handle new media preview
+document.getElementById('additional-media').addEventListener('change', (event) => {
+  const files = Array.from(event.target.files);
+  newMediaFiles = files;
+  
+  const previewContainer = document.getElementById('new-media-preview');
+  previewContainer.innerHTML = '';
+  
+  files.forEach(file => {
+    const objectUrl = URL.createObjectURL(file);
+    const isVideo = file.type.startsWith('video/');
+    createMediaPreview(objectUrl, previewContainer, isVideo);
+  });
+});
+
+// Handle new banner preview
+document.getElementById('banner-file').addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const bannerContainer = document.getElementById('current-banner');
+    bannerContainer.innerHTML = '';
+    createMediaPreview(URL.createObjectURL(file), bannerContainer);
+  }
+});
+
+async function uploadMedia(file, userId) {
+  const fileName = `${Date.now()}-${file.name}`;
+  const storagePath = `trips/${userId}/${tripId}/${fileName}`;
+  const storageRef = ref(storage, storagePath);
+  
+  const snapshot = await uploadBytes(storageRef, file);
+  return getDownloadURL(snapshot.ref);
+}
+
+async function deleteOldMedia(url) {
+  try {
+    const storageRef = ref(storage, url);
+    await deleteObject(storageRef);
+  } catch (error) {
+    console.error('Error deleting old media:', error);
+  }
+}
+
 async function saveChanges(event) {
   event.preventDefault();
+
+  // Validate dates
+  if (!updateDurationDisplay()) {
+    alert('Please check your dates. End date cannot be before start date.');
+    return;
+  }
 
   try {
     const user = auth.currentUser;
@@ -44,14 +187,49 @@ async function saveChanges(event) {
 
     const token = await user.getIdToken(true);
     
+    // Upload new banner if provided
+    let bannerUrl = currentTrip.bannerPhoto;
+    const newBanner = document.getElementById('banner-file').files[0];
+    if (newBanner) {
+      if (currentTrip.bannerPhoto) {
+        await deleteOldMedia(currentTrip.bannerPhoto);
+      }
+      bannerUrl = await uploadMedia(newBanner, user.uid);
+    }
+
+    // Upload new media files
+    const newMediaUrls = await Promise.all(
+      newMediaFiles.map(file => uploadMedia(file, user.uid))
+    );
+
+    // Delete removed media files
+    await Promise.all(
+      removedMediaUrls.map(url => deleteOldMedia(url))
+    );
+
+    // Get current media URLs that weren't removed
+    const currentMediaElements = document.getElementById('current-media')
+      .querySelectorAll('.media-preview-item img, .media-preview-item video');
+    const remainingMediaUrls = Array.from(currentMediaElements)
+      .map(el => el.src)
+      .filter(url => !removedMediaUrls.includes(url));
+
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    const { days, nights } = calculateTripDuration(startDate, endDate);
+
     const updatedTrip = {
       title: document.getElementById('title').value,
       start: document.getElementById('start').value,
       end: document.getElementById('end').value,
-      days: parseInt(document.getElementById('days').value, 10),
-      nights: parseInt(document.getElementById('nights').value, 10),
+      startDate,
+      endDate,
+      days,
+      nights,
       expense: parseFloat(document.getElementById('expense').value),
       description: document.getElementById('description').value,
+      bannerPhoto: bannerUrl,
+      mediaUrls: [...remainingMediaUrls, ...newMediaUrls]
     };
 
     const response = await fetch(`/trips/${tripId}`, {
@@ -76,11 +254,22 @@ async function saveChanges(event) {
   }
 }
 
-// Initialize form and auth state monitoring
 function initializeForm() {
   const form = document.getElementById('edit-trip-form');
   if (form) {
     form.addEventListener('submit', saveChanges);
+
+    // Add listeners for location changes
+    const startInput = document.getElementById('start');
+    const endInput = document.getElementById('end');
+    startInput.addEventListener('input', updateTitle);
+    endInput.addEventListener('input', updateTitle);
+
+    // Add listeners for date changes
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    startDateInput.addEventListener('change', updateDurationDisplay);
+    endDateInput.addEventListener('change', updateDurationDisplay);
   }
 
   onAuthStateChanged(auth, async (user) => {
@@ -100,5 +289,4 @@ function initializeForm() {
   });
 }
 
-// Start initialization when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeForm);

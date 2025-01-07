@@ -1,11 +1,104 @@
 :root {
-    --primary-color: #3498db;
-    --secondary-color: #2c3e50;
-    --background-color: #f8f9fa;
-    --text-color: #333;
-    --border-radius: 12px;
-    --box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  }
+  --primary-color: #3498db;
+  --secondary-color: #2c3e50;
+  --background-color: #f8f9fa;
+  --text-color: #333;
+  --border-radius: 12px;
+  --box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --timeline-width: 2px;
+  --stop-size: 24px;
+}
+
+.trip-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.trip-info {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.timeline-container {
+  padding: 20px;
+  margin: 40px 0;
+}
+
+.timeline {
+  position: relative;
+  padding: 20px 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 600px;
+}
+
+.timeline-track {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--timeline-width);
+  height: 100%;
+  background-color: #ddd;
+}
+
+.timeline-stops {
+  position: relative;
+  padding: 20px 0;
+}
+
+.timeline-stop {
+  position: relative;
+  margin: 30px 0;
+  padding-left: calc(50% + 30px);
+  min-height: var(--stop-size);
+  display: flex;
+  align-items: center;
+}
+
+.timeline-stop::before {
+  content: '';
+  position: absolute;
+  left: calc(50% - var(--stop-size)/2);
+  width: var(--stop-size);
+  height: var(--stop-size);
+  background-color: white;
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.timeline-stop.start::before {
+  background-color: #000;
+  border-color: #000;
+}
+
+.timeline-stop.end::before {
+  background-color: #000;
+  border: 4px solid #000;
+}
+
+.timeline-stop-content {
+  background-color: white;
+  padding: 15px 20px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.timeline-stop-label {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.timeline-stop.start .timeline-stop-content {
+  font-weight: bold;
+}
+
+.timeline-stop.end .timeline-stop-content {
+  font-weight: bold;
+}
+
   
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;

@@ -8,21 +8,32 @@
 </head>
 <body>
   <div id="trip-banner"></div>
-  <h1 id="trip-title"></h1>
-  <p id="trip-start-end"></p>
-  <p id="trip-days"></p>
-  <p id="trip-expense"></p>
-  <p id="trip-description"></p>
+  <div class="trip-container">
+    <h1 id="trip-title"></h1>
+    <div class="trip-info">
+      <p id="trip-start-end"></p>
+      <p id="trip-days"></p>
+      <p id="trip-expense"></p>
+      <p id="trip-description"></p>
+    </div>
 
-  <h3>Stops</h3>
-  <ul id="trip-stops"></ul>
+    <div class="timeline-container">
+      <h3>Trip Route</h3>
+      <div class="timeline">
+        <div class="timeline-track"></div>
+        <div id="trip-stops" class="timeline-stops">
+          <!-- Stops will be populated here -->
+        </div>
+      </div>
+    </div>
 
-  <div class="media-gallery">
-    <h3>Photos & Videos</h3>
-    <div id="media-container" class="media-grid"></div>
+    <div class="media-gallery">
+      <h3>Photos & Videos</h3>
+      <div id="media-container" class="media-grid"></div>
+    </div>
+
+    <p id="trip-username" class="trip-author"></p>
   </div>
-
-  <p id="trip-username" style="margin-top: 20px; font-weight: bold;"></p>
 
   <script type="module" src="trip-details.js"></script>
 </body>

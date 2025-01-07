@@ -1,5 +1,10 @@
 import { auth } from '../firebase.js';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider,
+  sendPasswordResetEmail
+} from 'firebase/auth';
 
 document.getElementById('login-form').addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -29,6 +34,26 @@ document.getElementById('google-login').addEventListener('click', async () => {
     window.location.href = 'home.html'; // Redirect to homepage
   } catch (error) {
     console.error('Error logging in with Google:', error.message);
+    alert(error.message);
+  }
+});
+
+// Forgot Password
+document.getElementById('forgot-password').addEventListener('click', async (event) => {
+  event.preventDefault();
+  
+  const email = document.getElementById('login-email').value;
+  
+  if (!email) {
+    alert('Please enter your email address in the email field');
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    alert('Password reset email sent! Please check your inbox.');
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
     alert(error.message);
   }
 });

@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 const urlParams = new URLSearchParams(window.location.search);
 const tripId = urlParams.get('id');
 
+
 function createMediaElement(url) {
   const container = document.createElement('div');
   container.className = 'media-item';

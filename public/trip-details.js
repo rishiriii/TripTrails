@@ -3,7 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 
 const urlParams = new URLSearchParams(window.location.search);
 const tripId = urlParams.get('id');
-
+let isLiked = false;
 
 function createMediaElement(url) {
   const container = document.createElement('div');
@@ -25,6 +25,83 @@ function createMediaElement(url) {
 
   return container;
 }
+
+async function incrementViews() {
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(`/trips/${tripId}/views`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      document.getElementById('viewCount').textContent = data.views;
+    }
+  } catch (error) {
+    console.error('Error updating views:', error);
+  }
+}
+
+async function loadLikeState() {
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(`/trips/${tripId}/likes`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      document.getElementById('likeCount').textContent = data.totalLikes;
+      isLiked = data.isLikedByUser;
+      updateLikeButtonAppearance();
+    }
+  } catch (error) {
+    console.error('Error loading likes:', error);
+  }
+}
+
+function updateLikeButtonAppearance() {
+  const likeButton = document.getElementById('likeButton');
+  const heartSpan = likeButton.querySelector('.heart');
+  
+  if (isLiked) {
+    heartSpan.textContent = '♥';
+    likeButton.classList.add('liked');
+  } else {
+    heartSpan.textContent = '♡';
+    likeButton.classList.remove('liked');
+  }
+}
+
+async function handleLike() {
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(`/trips/${tripId}/likes`, {
+      method: isLiked ? 'DELETE' : 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      document.getElementById('likeCount').textContent = data.totalLikes;
+      isLiked = data.isLikedByUser;
+      updateLikeButtonAppearance();
+    }
+  } catch (error) {
+    console.error('Error updating like:', error);
+  }
+}
+
 
 async function loadTripDetails() {
   if (!tripId) {
@@ -90,6 +167,12 @@ async function loadTripDetails() {
     console.error('Error:', error);
     document.getElementById('trip-title').textContent = 'Failed to load trip';
   }
+  await incrementViews();
+    await loadLikeState();
+
+    // Add like button event listener
+    document.getElementById('likeButton').addEventListener('click', handleLike);
+
 }
 
 onAuthStateChanged(auth, user => {

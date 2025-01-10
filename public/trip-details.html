@@ -4,35 +4,57 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trip Details</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="trip-details-styles.css">
 </head>
 <body>
-  <div id="trip-banner"></div>
-  <div class="trip-container">
+  <div class="container">
+    <a href="javascript:history.back()" class="back-button">← Back</a>
+    <div id="trip-banner"></div>
     <h1 id="trip-title"></h1>
-    <div class="trip-info">
-      <p id="trip-start-end"></p>
-      <p id="trip-days"></p>
-      <p id="trip-expense"></p>
-      <p id="trip-description"></p>
-    </div>
-
-    <div class="timeline-container">
-      <h3>Trip Route</h3>
-      <div class="timeline">
-        <div class="timeline-track"></div>
-        <div id="trip-stops" class="timeline-stops">
-          <!-- Stops will be populated here -->
-        </div>
+    <div class="trip-details">
+      <div>
+        <p id="trip-start-end" class="title"></p>
+        <p id="trip-days"></p>
+        <p id="trip-expense"></p>
+        <p id="trip-description"></p>
+        <div id="trip-details">
+          <h2 id="trip-title"></h2>
+          
       </div>
     </div>
 
-    <div class="media-gallery">
-      <h3>Photos & Videos</h3>
-      <div id="media-container" class="media-grid"></div>
+    <div class="engagement-section">
+      <div class="stat">
+        <span>👁️ Views:</span>
+        <span id="viewCount">0</span>
+      </div>
+      <div class="stat">
+        <button id="likeButton" class="like-button">
+          <span class="heart">♡</span>
+          <span id="likeCount">0</span>
+        </button>
+      </div>
     </div>
 
-    <p id="trip-username" class="trip-author"></p>
+    <div class="timeline-container">
+      <h2>Trip Route</h2>
+      <ul id="trip-stops">
+        <!-- Stops will be dynamically inserted here -->
+      </ul>
+    </div>
+
+    <div class="media-gallery">
+      <h2>Photos & Videos</h2>
+      <div id="media-container">
+        <!-- Media will be dynamically inserted here -->
+      </div>
+    </div>
+
+    
+
+    <footer>
+      <p id="trip-username" class="trip-author"></p>
+    </footer>
   </div>
 
   <script type="module" src="trip-details.js"></script>

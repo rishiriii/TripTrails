@@ -1,62 +1,61 @@
-// profile-dropdown.js
-import { auth } from '../firebase.js'; // Import Firebase Auth
-import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase.js';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 function createProfileDropdown() {
-  const profileContainer = document.getElementById('profile-container');
-  if (!profileContainer) {
-    console.error('Profile container not found');
-    return;
-  }
+  const container = document.getElementById('profile-container');
+  if (!container) return;
 
-  // Create the dropdown
-  const profileHTML = `
-    <div class="profile-button">
-      <span class="user-name"></span>
-      <div class="dropdown-content">
-        <button id="view-my-trips-btn">View My Trips</button>
-        <button id="logout-btn">Logout</button>
-      </div>
-    </div>
+  // Create profile button
+  const button = document.createElement('button');
+  button.className = 'profile-button';
+  button.innerHTML = `
+    <span>Profile</span>
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+    </svg>
   `;
-  profileContainer.innerHTML = profileHTML;
 
-  // Add event listeners
-  const dropdownContent = document.querySelector('.dropdown-content');
-  document.querySelector('.profile-button').addEventListener('click', (e) => {
+  // Create dropdown content
+  const dropdown = document.createElement('div');
+  dropdown.className = 'profile-dropdown';
+  dropdown.innerHTML = `
+    <a href="/my-trips.html" class="dropdown-item">My Trips</a>
+    <a href="#" class="dropdown-item" id="logout-btn">Logout</a>
+  `;
+
+  // Add elements to container
+  container.appendChild(button);
+  container.appendChild(dropdown);
+
+  // Toggle dropdown
+  button.addEventListener('click', (e) => {
     e.stopPropagation();
-    dropdownContent.classList.toggle('show');
+    dropdown.classList.toggle('show');
   });
 
-  window.addEventListener('click', () => {
-    dropdownContent.classList.remove('show');
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!container.contains(e.target)) {
+      dropdown.classList.remove('show');
+    }
   });
 
-  document.getElementById('logout-btn').addEventListener('click', async () => {
+  // Handle logout
+  document.getElementById('logout-btn').addEventListener('click', async (e) => {
+    e.preventDefault();
     try {
       await signOut(auth);
-      window.location.href = 'login.html'; // Redirect to login on logout
+      window.location.href = 'login.html';
     } catch (error) {
-      console.error('Error logging out:', error.message);
+      console.error('Error logging out:', error);
       alert('Failed to logout. Please try again.');
     }
   });
-
-  document.getElementById('view-my-trips-btn').addEventListener('click', () => {
-    window.location.href = 'my-trips.html'; // Redirect to the user's trips page
-  });
 }
 
-// Monitor auth state and update the dropdown
+// Initialize dropdown when user is authenticated
 onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    window.location.href = 'login.html'; // Redirect if not authenticated
-  } else {
+  if (user) {
     createProfileDropdown();
-
-    const userNameSpan = document.querySelector('.user-name');
-    if (userNameSpan) {
-      userNameSpan.textContent = user.displayName || user.email;
-    }
   }
 });

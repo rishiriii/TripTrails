@@ -143,4 +143,109 @@ tripsRouter.patch('/:id', async (req, res) => {
   }
 });
 
+tripsRouter.post('/:id/views', async (req, res) => {
+    const tripId = req.params.id;
+  
+    try {
+      const tripRef = db.collection('trips').doc(tripId);
+      const tripDoc = await tripRef.get();
+  
+      if (!tripDoc.exists) {
+        return res.status(404).send({ message: 'Trip not found' });
+      }
+  
+      // Use a transaction to safely increment the view count
+      await db.runTransaction(async (transaction) => {
+        const doc = await transaction.get(tripRef);
+        const currentViews = doc.data().views || 0;
+        transaction.update(tripRef, { views: currentViews + 1 });
+      });
+  
+      // Get updated trip doc
+      const updatedDoc = await tripRef.get();
+      res.json({ views: updatedDoc.data().views || 0 });
+    } catch (error) {
+      console.error('Error updating views:', error);
+      res.status(500).send({ message: 'Error updating views', error: error.message });
+    }
+  });
+  
+  // Get likes status for a trip
+  tripsRouter.get('/:id/likes', async (req, res) => {
+    const tripId = req.params.id;
+    const userId = req.user.uid;
+  
+    try {
+      const tripRef = db.collection('trips').doc(tripId);
+      const likesRef = tripRef.collection('likes');
+      
+      const [tripDoc, userLikeDoc] = await Promise.all([
+        tripRef.get(),
+        likesRef.doc(userId).get()
+      ]);
+  
+      if (!tripDoc.exists) {
+        return res.status(404).send({ message: 'Trip not found' });
+      }
+  
+      const likesSnapshot = await likesRef.get();
+      
+      res.json({
+        totalLikes: likesSnapshot.size,
+        isLikedByUser: userLikeDoc.exists
+      });
+    } catch (error) {
+      console.error('Error fetching likes:', error);
+      res.status(500).send({ message: 'Error fetching likes', error: error.message });
+    }
+  });
+  
+  // Add a like to a trip
+  tripsRouter.post('/:id/likes', async (req, res) => {
+    const tripId = req.params.id;
+    const userId = req.user.uid;
+  
+    try {
+      const tripRef = db.collection('trips').doc(tripId);
+      const likesRef = tripRef.collection('likes');
+      
+      await likesRef.doc(userId).set({
+        timestamp: new Date()
+      });
+  
+      const likesSnapshot = await likesRef.get();
+      
+      res.json({
+        totalLikes: likesSnapshot.size,
+        isLikedByUser: true
+      });
+    } catch (error) {
+      console.error('Error adding like:', error);
+      res.status(500).send({ message: 'Error adding like', error: error.message });
+    }
+  });
+  
+  // Remove a like from a trip
+  tripsRouter.delete('/:id/likes', async (req, res) => {
+    const tripId = req.params.id;
+    const userId = req.user.uid;
+  
+    try {
+      const tripRef = db.collection('trips').doc(tripId);
+      const likesRef = tripRef.collection('likes');
+      
+      await likesRef.doc(userId).delete();
+  
+      const likesSnapshot = await likesRef.get();
+      
+      res.json({
+        totalLikes: likesSnapshot.size,
+        isLikedByUser: false
+      });
+    } catch (error) {
+      console.error('Error removing like:', error);
+      res.status(500).send({ message: 'Error removing like', error: error.message });
+    }
+  });
+
 export default tripsRouter;

@@ -8,7 +8,6 @@ import { dirname } from 'path';
 import tripsRouter from './routes/trips.js';
 import userRouter from './routes/users.js';
 
-// Get the current file's directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -25,11 +24,23 @@ const PORT = process.env.PORT || 3000;
 // Serve static files from the "public" folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Use routers
+
+
+// API Routes - these should come BEFORE the fallback route
 app.use('/trips', tripsRouter);
 app.use('/api/users', userRouter);
-// Fallback Route for Undefined Endpoints
-app.use((req, res, next) => {
+
+// Serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  if (!req.url.startsWith('/api') && !req.url.startsWith('/trips')) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } else {
+    next();
+  }
+});
+
+// Fallback Route for Undefined API Endpoints - should be LAST
+app.use((req, res) => {
   res.status(404).json({ message: 'Endpoint not found' });
 });
 
@@ -39,7 +50,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal server error' });
 });
 
-// Start the Server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

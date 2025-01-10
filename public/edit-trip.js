@@ -8,6 +8,76 @@ const tripId = urlParams.get('id');
 let currentTrip = null;
 let newMediaFiles = [];
 let removedMediaUrls = [];
+let stops = [];
+
+function createStopElement(stopLocation = '', index) {
+  const stopDiv = document.createElement('div');
+  stopDiv.className = 'stop-item';
+  
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = stopLocation;
+  input.placeholder = 'Enter stop location';
+  input.className = 'stop-input';
+  
+  const upBtn = document.createElement('button');
+  upBtn.textContent = '↑';
+  upBtn.type = 'button';
+  upBtn.onclick = () => moveStop(index, 'up');
+  
+  const downBtn = document.createElement('button');
+  downBtn.textContent = '↓';
+  downBtn.type = 'button';
+  downBtn.onclick = () => moveStop(index, 'down');
+  
+  const removeBtn = document.createElement('button');
+  removeBtn.textContent = '✕';
+  removeBtn.type = 'button';
+  removeBtn.onclick = () => removeStop(index);
+  
+  stopDiv.appendChild(input);
+  stopDiv.appendChild(upBtn);
+  stopDiv.appendChild(downBtn);
+  stopDiv.appendChild(removeBtn);
+  
+  return stopDiv;
+}
+
+function moveStop(index, direction) {
+  const newIndex = direction === 'up' ? index - 1 : index + 1;
+  if (newIndex >= 0 && newIndex < stops.length) {
+    [stops[index], stops[newIndex]] = [stops[newIndex], stops[index]];
+    renderStops();
+    updateTitle();
+  }
+}
+
+function removeStop(index) {
+  stops.splice(index, 1);
+  renderStops();
+  updateTitle();
+}
+
+function renderStops() {
+  const container = document.getElementById('stops-container');
+  container.innerHTML = '';
+  stops.forEach((stop, index) => {
+    const stopElement = createStopElement(stop, index);
+    container.appendChild(stopElement);
+  });
+}
+
+function addStop() {
+  stops.push('');
+  renderStops();
+}
+
+// Update title to include stops
+function updateTitle() {
+  const start = document.getElementById('start').value || 'Unknown';
+  const end = document.getElementById('end').value || 'Unknown';
+  document.getElementById('title').value = `${start} - ${end}`;
+}
 
 // Calculate trip duration from dates
 function calculateTripDuration(startDate, endDate) {
@@ -37,13 +107,6 @@ function updateDurationDisplay() {
     return true;
   }
   return false;
-}
-
-// Automatically update the title field based on "Start" and "End" locations
-function updateTitle() {
-  const start = document.getElementById('start').value || 'Unknown';
-  const end = document.getElementById('end').value || 'Unknown';
-  document.getElementById('title').value = `${start} - ${end}`;
 }
 
 function createMediaPreview(url, container, isVideo = false) {
@@ -101,6 +164,10 @@ async function loadTrip(token) {
     document.getElementById('endDate').value = currentTrip.endDate || '';
     document.getElementById('expense').value = currentTrip.expense || 0;
     document.getElementById('description').value = currentTrip.description || '';
+
+    // Load stops
+    stops = currentTrip.stops || [];
+    renderStops();
 
     // Update duration display
     updateDurationDisplay();
@@ -214,6 +281,11 @@ async function saveChanges(event) {
       .map(el => el.src)
       .filter(url => !removedMediaUrls.includes(url));
 
+    // Gather all stops
+    const currentStops = Array.from(document.querySelectorAll('.stop-input'))
+      .map(input => input.value.trim())
+      .filter(stop => stop !== '');
+
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     const { days, nights } = calculateTripDuration(startDate, endDate);
@@ -222,6 +294,7 @@ async function saveChanges(event) {
       title: document.getElementById('title').value,
       start: document.getElementById('start').value,
       end: document.getElementById('end').value,
+      stops: currentStops,
       startDate,
       endDate,
       days,
@@ -265,6 +338,9 @@ function initializeForm() {
     startInput.addEventListener('input', updateTitle);
     endInput.addEventListener('input', updateTitle);
 
+    // Add listener for add stop button
+    document.getElementById('add-stop-btn').addEventListener('click', addStop);
+
     // Add listeners for date changes
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
@@ -278,6 +354,7 @@ function initializeForm() {
       window.location.href = 'login.html';
       return;
     }
+
 
     try {
       const token = await user.getIdToken(true);

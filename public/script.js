@@ -7,18 +7,14 @@ function hasTripList() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      window.location.href = 'login.html';
-    } else {
-      // Only load trips if we're on a page with the trip list
-      if (hasTripList()) {
+  if (hasTripList()) {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
         loadTrips();
       }
-    }
-  });
+    });
+  }
 });
-
 async function loadTrips() {
   const tripList = document.getElementById('trip-list');
   if (!tripList) {

@@ -5,13 +5,13 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 onAuthStateChanged(auth, (user) => {
   if (user) {
     const userEmail = document.getElementById('user-email');
-    userEmail.textContent = user.email; // Display the user's email
-  } else {
-    // Redirect to login page if the user is not logged in
+    if (userEmail) {
+      userEmail.textContent = user.email;
+    }
+  } else if (!window.location.pathname.includes('login.html')) {
     window.location.href = 'login.html';
   }
 });
-
 // Logout functionality
 document.getElementById('logout-btn').addEventListener('click', async () => {
   try {

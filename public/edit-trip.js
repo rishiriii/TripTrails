@@ -10,6 +10,29 @@ let newMediaFiles = [];
 let removedMediaUrls = [];
 let stops = [];
 
+function initializeAutocomplete(inputId) {
+  const input = document.getElementById(inputId);
+  const autocomplete = new google.maps.places.Autocomplete(input, {
+    types: ['(cities)'],
+    fields: ['address_components', 'name']
+  });
+
+  // Extract only city name from the selected place
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (place.address_components) {
+      // Find the city component
+      const cityComponent = place.address_components.find(component => 
+        component.types.includes('locality')
+      );
+      if (cityComponent) {
+        input.value = cityComponent.long_name;
+        updateTitle(); // Update title when location changes
+      }
+    }
+  });
+}
+
 function createStopElement(stopLocation = '', index) {
   const stopDiv = document.createElement('div');
   stopDiv.className = 'stop-item';
@@ -19,6 +42,12 @@ function createStopElement(stopLocation = '', index) {
   input.value = stopLocation;
   input.placeholder = 'Enter stop location';
   input.className = 'stop-input';
+  input.id = `stop-${Date.now()}-${index}`; // Ensure unique ID even for rerendered elements
+  
+  // Update stops array when input changes
+  input.addEventListener('input', (e) => {
+    stops[index] = e.target.value;
+  });
   
   const upBtn = document.createElement('button');
   upBtn.textContent = '↑';
@@ -39,6 +68,27 @@ function createStopElement(stopLocation = '', index) {
   stopDiv.appendChild(upBtn);
   stopDiv.appendChild(downBtn);
   stopDiv.appendChild(removeBtn);
+
+  // Initialize autocomplete after the element is added to the DOM
+  setTimeout(() => {
+    const autocomplete = new google.maps.places.Autocomplete(input, {
+      types: ['(cities)'],
+      fields: ['address_components', 'name']
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place.address_components) {
+        const cityComponent = place.address_components.find(component => 
+          component.types.includes('locality')
+        );
+        if (cityComponent) {
+          input.value = cityComponent.long_name;
+          stops[index] = cityComponent.long_name; // Update stops array with selected city
+        }
+      }
+    });
+  }, 0);
   
   return stopDiv;
 }
@@ -48,14 +98,12 @@ function moveStop(index, direction) {
   if (newIndex >= 0 && newIndex < stops.length) {
     [stops[index], stops[newIndex]] = [stops[newIndex], stops[index]];
     renderStops();
-    updateTitle();
   }
 }
 
 function removeStop(index) {
   stops.splice(index, 1);
   renderStops();
-  updateTitle();
 }
 
 function renderStops() {
@@ -158,15 +206,15 @@ async function loadTrip(token) {
     currentTrip = await response.json();
 
     // Populate form fields
-    document.getElementById('start').value = currentTrip.start || '';
-    document.getElementById('end').value = currentTrip.end || '';
+    document.getElementById('start').value = currentTrip.originalStart || currentTrip.start || '';
+    document.getElementById('end').value = currentTrip.originalEnd || currentTrip.end || '';
     document.getElementById('startDate').value = currentTrip.startDate || '';
     document.getElementById('endDate').value = currentTrip.endDate || '';
     document.getElementById('expense').value = currentTrip.expense || 0;
     document.getElementById('description').value = currentTrip.description || '';
 
     // Load stops
-    stops = currentTrip.stops || [];
+    stops = [...(currentTrip.stops || [])]; // Create a new array to avoid reference issues
     renderStops();
 
     // Update duration display
@@ -292,8 +340,10 @@ async function saveChanges(event) {
 
     const updatedTrip = {
       title: document.getElementById('title').value,
-      start: document.getElementById('start').value,
-      end: document.getElementById('end').value,
+      start: document.getElementById('start').value.toLowerCase(), // Store lowercase for search
+      end: document.getElementById('end').value.toLowerCase(),
+      originalStart: document.getElementById('start').value, // Store original case
+      originalEnd: document.getElementById('end').value,
       stops: currentStops,
       startDate,
       endDate,
@@ -332,6 +382,10 @@ function initializeForm() {
   if (form) {
     form.addEventListener('submit', saveChanges);
 
+    // Initialize autocomplete for start and end locations
+    initializeAutocomplete('start');
+    initializeAutocomplete('end');
+
     // Add listeners for location changes
     const startInput = document.getElementById('start');
     const endInput = document.getElementById('end');
@@ -354,7 +408,6 @@ function initializeForm() {
       window.location.href = 'login.html';
       return;
     }
-
 
     try {
       const token = await user.getIdToken(true);

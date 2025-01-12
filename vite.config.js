@@ -6,6 +6,7 @@ export default defineConfig({
     outDir: '../dist',  // Output to dist folder outside public
   },
   server: {
+    host: '0.0.0.0',  // Add this line to allow external access
     proxy: {
       '/trips': 'http://localhost:3000',  // Proxy requests to your Express backend
     },

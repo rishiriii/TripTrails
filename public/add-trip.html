@@ -4,24 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Trip</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="add-trip.css">
+  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA2Pe_WR2Fh3ieUOKSMrZre5cvpYGJ4pBU&libraries=places"></script>
+
 </head>
 <body>
   <h1>Add a New Trip</h1>
   
   <form id="add-trip-form">
-    <label>Start Location: <input type="text" name="start" required></label><br>
-    <label>End Location: <input type="text" name="end" required></label><br>
+    <label>Start Location: <input type="text" id="start-location" name="start" required></label><br>
+    <label>End Location: <input type="text" id="end-location" name="end" required></label><br>
     <label>Start Date: <input type="date" name="startDate" required></label><br>
     <label>End Date: <input type="date" name="endDate" required></label><br>
     <label>Expense: <input type="number" name="expense" required></label><br>
     <label>Description: <textarea name="description" required></textarea></label><br>
     
-    <div id="stops-section">
-      <h3>Stops</h3>
-      <div id="stops-container"></div>
-      <input type="text" id="stop-input" placeholder="Enter a stop" />
-      <button type="button" id="add-stop-btn">Add Stop</button>
+    <div class="form-group">
+      <label>Stops</label>
+      <div id="stops-container" class="stops-container"></div>
+      <button type="button" id="add-stop-btn" class="btn-outline">Add Stop</button>
     </div>
     
     <div id="media-section">

@@ -17,6 +17,50 @@ const checkDbConnection = (req, res, next) => {
 
 tripsRouter.use(checkDbConnection);
 
+tripsRouter.get('/search', async (req, res) => {
+  try {
+    const { start, end } = req.query;
+    let query = db.collection('trips');
+    let trips = [];
+
+    // Get all trips first
+    const snapshot = await query.get();
+    
+    if (snapshot.empty) {
+      return res.json([]);
+    }
+
+    trips = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // Filter with partial matching
+    if (start || end) {
+      const normalizedStart = start ? start.trim().toLowerCase() : '';
+      const normalizedEnd = end ? end.trim().toLowerCase() : '';
+
+      trips = trips.filter(trip => {
+        // Check if the search term appears anywhere in the location string
+        const startMatch = !normalizedStart || 
+          trip.start.toLowerCase().includes(normalizedStart) ||
+          (trip.originalStart && trip.originalStart.toLowerCase().includes(normalizedStart));
+        
+        const endMatch = !normalizedEnd || 
+          trip.end.toLowerCase().includes(normalizedEnd) ||
+          (trip.originalEnd && trip.originalEnd.toLowerCase().includes(normalizedEnd));
+
+        return startMatch && endMatch;
+      });
+    }
+
+    res.json(trips);
+  } catch (error) {
+    console.error('Error searching trips:', error.message);
+    res.status(500).send({ message: 'Error searching trips', error: error.message });
+  }
+});
+
 // Add a new trip
 tripsRouter.post('/', async (req, res) => {
   const tripData = req.body;
@@ -37,10 +81,17 @@ tripsRouter.post('/', async (req, res) => {
 
   try {
     const tripsRef = db.collection('trips');
-    const docRef = await tripsRef.add({
+    // Store both lowercase and original versions of locations
+    const processedTripData = {
       ...tripData,
+      start: tripData.start.toLowerCase(),
+      end: tripData.end.toLowerCase(),
+      originalStart: tripData.start, // Keep original case for display
+      originalEnd: tripData.end,     // Keep original case for display
       userId: req.user.uid,
-    });
+    };
+
+    const docRef = await tripsRef.add(processedTripData);
 
     res.status(201).send({
       id: docRef.id,

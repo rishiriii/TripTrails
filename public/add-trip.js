@@ -1,8 +1,119 @@
 import { auth, storage } from '../firebase.js';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const stops = [];
+let stops = [];
 let mediaFiles = [];
+
+function initializeAutocomplete(inputId) {
+  const input = document.getElementById(inputId);
+  const autocomplete = new google.maps.places.Autocomplete(input, {
+    types: ['(cities)'],
+    fields: ['address_components', 'name']
+  });
+
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (place.address_components) {
+      const cityComponent = place.address_components.find(component => 
+        component.types.includes('locality')
+      );
+      if (cityComponent) {
+        input.value = cityComponent.long_name;
+       
+      }
+    }
+  });
+}
+
+function createStopElement(stopLocation = '', index) {
+  const stopDiv = document.createElement('div');
+  stopDiv.className = 'stop-item';
+  
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = stopLocation;
+  input.placeholder = 'Enter stop location';
+  input.className = 'stop-input';
+  input.id = `stop-${Date.now()}-${index}`;
+  
+  input.addEventListener('input', (e) => {
+    stops[index] = e.target.value;
+  });
+  
+  const upBtn = document.createElement('button');
+  upBtn.textContent = '↑';
+  upBtn.type = 'button';
+  upBtn.className = 'btn-icon';
+  upBtn.onclick = () => moveStop(index, 'up');
+  
+  const downBtn = document.createElement('button');
+  downBtn.textContent = '↓';
+  downBtn.type = 'button';
+  downBtn.className = 'btn-icon';
+  downBtn.onclick = () => moveStop(index, 'down');
+  
+  const removeBtn = document.createElement('button');
+  removeBtn.textContent = '✕';
+  removeBtn.type = 'button';
+  removeBtn.className = 'btn-icon';
+  removeBtn.onclick = () => removeStop(index);
+  
+  stopDiv.appendChild(input);
+  stopDiv.appendChild(upBtn);
+  stopDiv.appendChild(downBtn);
+  stopDiv.appendChild(removeBtn);
+
+  setTimeout(() => {
+    const autocomplete = new google.maps.places.Autocomplete(input, {
+      types: ['(cities)'],
+      fields: ['address_components', 'name']
+    });
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place.address_components) {
+        const cityComponent = place.address_components.find(component => 
+          component.types.includes('locality')
+        );
+        if (cityComponent) {
+          input.value = cityComponent.long_name;
+          stops[index] = cityComponent.long_name;
+        }
+      }
+    });
+  }, 0);
+  
+  return stopDiv;
+}
+
+function moveStop(index, direction) {
+  const newIndex = direction === 'up' ? index - 1 : index + 1;
+  if (newIndex >= 0 && newIndex < stops.length) {
+    [stops[index], stops[newIndex]] = [stops[newIndex], stops[index]];
+    renderStops();
+  }
+}
+
+function removeStop(index) {
+  stops.splice(index, 1);
+  renderStops();
+}
+
+function renderStops() {
+  const container = document.getElementById('stops-container');
+  container.innerHTML = '';
+  stops.forEach((stop, index) => {
+    const stopElement = createStopElement(stop, index);
+    container.appendChild(stopElement);
+  });
+}
+
+function addStop() {
+  stops.push('');
+  renderStops();
+}
+
+
 
 function calculateTripDuration(startDate, endDate) {
   const start = new Date(startDate);
@@ -15,7 +126,6 @@ function calculateTripDuration(startDate, endDate) {
   };
 }
 
-// Media preview handler
 document.getElementById('media-files').addEventListener('change', (event) => {
   const files = Array.from(event.target.files);
   mediaFiles = files;
@@ -46,30 +156,6 @@ document.getElementById('media-files').addEventListener('change', (event) => {
   });
 });
 
-// Stops handler
-document.getElementById('add-stop-btn').addEventListener('click', () => {
-  const stopInput = document.getElementById('stop-input');
-  const stopValue = stopInput.value.trim();
-  
-  if (stopValue) {
-    stops.push(stopValue);
-    const stopListItem = document.createElement('div');
-    stopListItem.textContent = stopValue;
-    stopListItem.classList.add('stop-item');
-    
-    const deleteButton = document.createElement('button');
-    deleteButton.textContent = 'Remove';
-    deleteButton.addEventListener('click', () => {
-      stops.splice(stops.indexOf(stopValue), 1);
-      stopListItem.remove();
-    });
-    
-    stopListItem.appendChild(deleteButton);
-    document.getElementById('stops-container').appendChild(stopListItem);
-    stopInput.value = '';
-  }
-});
-
 async function uploadMedia(file, userId, tripId) {
   const fileName = `${Date.now()}-${file.name}`;
   const storagePath = `trips/${userId}/${tripId}/${fileName}`;
@@ -86,24 +172,52 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
     const user = auth.currentUser;
     if (!user) throw new Error('Please log in to add a trip');
     
+    // Basic validation
+    const startLocation = document.getElementById('start-location').value.trim();
+    const endLocation = document.getElementById('end-location').value.trim();
+    
+    if (!startLocation || !endLocation) {
+      throw new Error('Please enter both start and end locations');
+    }
+    
     const token = await user.getIdToken();
     const formData = new FormData(event.target);
     
     // Validate dates
     const startDate = formData.get('startDate');
     const endDate = formData.get('endDate');
+    
+    if (!startDate || !endDate) {
+      throw new Error('Please select both start and end dates');
+    }
+    
     if (new Date(endDate) < new Date(startDate)) {
       throw new Error('End date cannot be before start date');
     }
 
     const { days, nights } = calculateTripDuration(startDate, endDate);
     
-    // Upload banner first
+    // Validate banner photo
     const bannerFile = document.getElementById('banner-file').files[0];
-    if (!bannerFile) throw new Error('Banner photo is required');
+    if (!bannerFile) {
+      throw new Error('Please select a banner photo');
+    }
+    
+    // Show loading state
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'loading-overlay active';
+    loadingOverlay.innerHTML = `
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Saving your trip...</div>
+      </div>
+    `;
+    document.body.appendChild(loadingOverlay);
     
     // Generate temporary tripId for storage path
     const tempTripId = Date.now().toString();
+    
+    // Upload banner
     const bannerUrl = await uploadMedia(bannerFile, user.uid, tempTripId);
     
     // Upload additional media
@@ -111,9 +225,14 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
       mediaFiles.map(file => uploadMedia(file, user.uid, tempTripId))
     );
 
+    // Filter out empty stops
+    const validStops = stops.filter(stop => stop.trim() !== '');
+
     const newTrip = {
-      start: formData.get('start'),
-      end: formData.get('end'),
+      start: startLocation.toLowerCase(),
+      end: endLocation.toLowerCase(),
+      originalStart: startLocation,
+      originalEnd: endLocation,
       startDate,
       endDate,
       days,
@@ -121,8 +240,8 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
       expense: parseFloat(formData.get('expense')),
       description: formData.get('description'),
       visibility: formData.get('visibility'),
-      stops: stops,
-      title: `${formData.get('start')} to ${formData.get('end')}`,
+      stops: validStops,
+      title: `${startLocation} to ${endLocation}`,
       bannerPhoto: bannerUrl,
       mediaUrls: mediaUrls
     };
@@ -146,5 +265,26 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
   } catch (error) {
     console.error('Error saving trip:', error);
     alert(error.message || 'Failed to save trip. Please try again.');
+  } finally {
+    // Remove loading overlay
+    const loadingOverlay = document.querySelector('.loading-overlay');
+    if (loadingOverlay) {
+      loadingOverlay.remove();
+    }
   }
+});
+
+// Initialize everything when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize autocomplete for start and end locations
+  initializeAutocomplete('start-location');
+  initializeAutocomplete('end-location');
+  
+  // Add stop button handler
+  document.getElementById('add-stop-btn').addEventListener('click', addStop);
+  
+  // Add input handlers for title updates
+  const startInput = document.getElementById('start-location');
+  const endInput = document.getElementById('end-location');
+  
 });

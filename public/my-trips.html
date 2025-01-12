@@ -9,13 +9,24 @@
 <body>
     <header>
         <nav class="navbar">
-            <!-- Back arrow -->
-            <button class="back-button" onclick="window.history.back()">
-                &#8592; Back
-            </button>
-            <div class="profile-container" id="profile-container"></div>
+          <a href="/home.html" class="navbar-brand">TripTrails</a>
+          
+          <div class="navbar-center">
+            <a href="/home.html" class="nav-link">Home</a>
+            <a href="/explore.html" class="nav-link">Explore</a>
+            <a href="/about.html" class="nav-link">About Us</a>
+            <a href="/contact.html" class="nav-link">Contact Us</a>
+            <button onclick="window.location.href='add-trip.html'" class="add-trip-btn">Add Trip</button>
+          </div>
+          
+          <div class="navbar-right">
+            <div id="profile-container" class="profile-container">
+              <!-- Profile dropdown content will be inserted by profile-dropdown.js -->
+            </div>
+            
+          </div>
         </nav>
-    </header>
+      </header>
     
     <main class="container">
         <h1>My Trips</h1>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TripTrails - Explore</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <nav class="navbar">
+      <a href="/home.html" class="navbar-brand">TripTrails</a>
+      
+      <div class="navbar-center">
+        <a href="/home.html" class="nav-link">Home</a>
+        <a href="/explore.html" class="nav-link active">Explore</a>
+        <a href="/about.html" class="nav-link">About Us</a>
+        <a href="/contact.html" class="nav-link">Contact Us</a>
+        <button onclick="window.location.href='add-trip.html'" class="add-trip-btn">Add Trip</button>
+      </div>
+      
+      <div class="navbar-right">
+        <div id="profile-container" class="profile-container">
+          <!-- Profile dropdown content will be inserted by profile-dropdown.js -->
+        </div>
+      </div>
+    </nav>
+  </header>
+  
+  <main>
+    <div class="search-container">
+      <div class="search-form">
+        <input type="text" id="start-location" placeholder="Starting Location" class="search-input">
+        <input type="text" id="end-location" placeholder="Destination" class="search-input">
+        <button id="search-btn" class="search-button">Search Trips</button>
+      </div>
+    </div>
+
+    <div id="trip-list" class="card-container">
+      <!-- Trip cards will be dynamically inserted here -->
+    </div>
+  </main>
+  
+  <script type="module" src="profile-dropdown.js"></script>
+  <script type="module" src="explore.js"></script>
+  <script type="module" src="auth-guard.js"></script>
+</body>
+</html>

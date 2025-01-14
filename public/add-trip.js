@@ -243,7 +243,10 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
       stops: validStops,
       title: `${startLocation} to ${endLocation}`,
       bannerPhoto: bannerUrl,
-      mediaUrls: mediaUrls
+      mediaUrls: mediaUrls,
+      userId: user.uid,
+  userEmail: user.email,
+  userName: user.displayName || user.email
     };
 
     const response = await fetch('/trips', {
@@ -286,5 +289,5 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add input handlers for title updates
   const startInput = document.getElementById('start-location');
   const endInput = document.getElementById('end-location');
-  
+ 
 });

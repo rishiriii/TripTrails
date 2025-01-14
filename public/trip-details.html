@@ -9,52 +9,57 @@
 <body>
   <div class="container">
     <a href="javascript:history.back()" class="back-button">← Back</a>
-    <div id="trip-banner"></div>
-    <h1 id="trip-title"></h1>
-    <div class="trip-details">
-      <div>
-        <p id="trip-start-end" class="title"></p>
-        <p id="trip-days"></p>
-        <p id="trip-expense"></p>
+
+    <!-- Media Grid -->
+    <div class="media-grid" id="media-grid">
+      <!-- Images will be dynamically inserted here -->
+    </div>
+
+    <!-- Trip Info -->
+    <div class="trip-info">
+      <div class="trip-header">
+        <h1 id="trip-title"></h1>
+        <p id="trip-username" class="trip-author"></p>
+      </div>
+
+      <div class="trip-stats">
+        <div class="stat-item">
+          <h4>Duration</h4>
+          <p id="trip-days"></p>
+        </div>
+        <div class="stat-item">
+          <h4>Route</h4>
+          <p id="trip-start-end"></p>
+        </div>
+        <div class="stat-item">
+          <h4>Cost</h4>
+          <p id="trip-expense"></p>
+        </div>
+      </div>
+
+      <div class="trip-description">
+        <h4>About this trip</h4>
         <p id="trip-description"></p>
-        <div id="trip-details">
-          <h2 id="trip-title"></h2>
-          
       </div>
     </div>
 
+    <!-- Timeline -->
+    <div class="timeline-container">
+      <h2>Trip Route</h2>
+      <ul id="trip-stops"></ul>
+    </div>
+
+    <!-- Engagement Section -->
     <div class="engagement-section">
       <div class="stat">
         <span>👁️ Views:</span>
         <span id="viewCount">0</span>
       </div>
-      <div class="stat">
-        <button id="likeButton" class="like-button">
-          <span class="heart">♡</span>
-          <span id="likeCount">0</span>
-        </button>
-      </div>
+      <button id="likeButton" class="like-button">
+        <span class="heart">♡</span>
+        <span id="likeCount">0</span>
+      </button>
     </div>
-
-    <div class="timeline-container">
-      <h2>Trip Route</h2>
-      <ul id="trip-stops">
-        <!-- Stops will be dynamically inserted here -->
-      </ul>
-    </div>
-
-    <div class="media-gallery">
-      <h2>Photos & Videos</h2>
-      <div id="media-container">
-        <!-- Media will be dynamically inserted here -->
-      </div>
-    </div>
-
-    
-
-    <footer>
-      <p id="trip-username" class="trip-author"></p>
-    </footer>
   </div>
 
   <script type="module" src="trip-details.js"></script>

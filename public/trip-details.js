@@ -5,6 +5,37 @@ const urlParams = new URLSearchParams(window.location.search);
 const tripId = urlParams.get('id');
 let isLiked = false;
 
+function createMediaGrid(bannerUrl, mediaUrls = []) {
+  const mediaGrid = document.getElementById('media-grid');
+  mediaGrid.innerHTML = '';
+
+  // Add banner as first item
+  if (bannerUrl) {
+    const bannerItem = document.createElement('div');
+    bannerItem.className = 'media-item';
+    bannerItem.innerHTML = `<img src="${bannerUrl}" alt="Trip Banner" class="media-content">`;
+    mediaGrid.appendChild(bannerItem);
+  }
+
+  // Add remaining media items
+  mediaUrls.forEach(url => {
+    const mediaItem = document.createElement('div');
+    mediaItem.className = 'media-item';
+    
+    if (url.match(/\.(mp4|webm|ogg)$/i)) {
+      mediaItem.innerHTML = `
+        <video src="${url}" controls class="media-content"></video>
+      `;
+    } else {
+      mediaItem.innerHTML = `
+        <img src="${url}" alt="Trip Media" class="media-content">
+      `;
+    }
+    
+    mediaGrid.appendChild(mediaItem);
+  });
+}
+
 function createMediaElement(url) {
   const container = document.createElement('div');
   container.className = 'media-item';
@@ -102,7 +133,6 @@ async function handleLike() {
   }
 }
 
-
 async function loadTripDetails() {
   if (!tripId) {
     document.getElementById('trip-title').textContent = 'No trip ID provided';
@@ -125,54 +155,74 @@ async function loadTripDetails() {
 
     const trip = await response.json();
 
-    // Populate banner
-    const bannerContainer = document.getElementById('trip-banner');
-    if (trip.bannerPhoto) {
-      bannerContainer.innerHTML = `
-        <img src="${trip.bannerPhoto}" 
-             alt="Trip Banner" 
-             style="width: 100%; height: 300px; object-fit: cover;">`;
-    }
+    // Create media grid with banner and media
+    createMediaGrid(trip.bannerPhoto, trip.mediaUrls);
 
-    // Populate basic details
+    // Format location names - capitalize first letter of each word
+    const formatLocation = (location) => {
+      if (!location) return '';
+      return location
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    };
+
+    // Populate trip details with properly formatted locations
     document.getElementById('trip-title').textContent = trip.title || 'No Title';
     document.getElementById('trip-start-end').textContent = 
-      `${trip.start || 'Unknown'} to ${trip.end || 'Unknown'}`;
+      `${formatLocation(trip.start) || 'Unknown'} to ${formatLocation(trip.end) || 'Unknown'}`;
     document.getElementById('trip-days').textContent = 
       `${trip.days || 0} Days / ${trip.nights || 0} Nights`;
     document.getElementById('trip-expense').textContent = 
-      `Cost: $${trip.expense || 0}`;
+      `$${trip.expense || 0}`;
     document.getElementById('trip-description').textContent = 
       trip.description || 'No description available';
 
-    // Populate stops
+    // Update username display
+    const username = trip.userName || trip.userEmail?.split('@')[0] || 'Unknown user';
+    document.getElementById('trip-username').textContent = `Posted by: ${username}`;
+
+    // Populate stops with start and destination, ensuring proper capitalization
     const stopsList = document.getElementById('trip-stops');
-    stopsList.innerHTML = trip.stops?.length 
-      ? trip.stops.map(stop => `<li>${stop}</li>`).join('')
-      : '<li>No stops available</li>';
-
-    // Populate media gallery
-    const mediaContainer = document.getElementById('media-container');
-    if (trip.mediaUrls?.length) {
-      trip.mediaUrls.forEach(url => {
-        mediaContainer.appendChild(createMediaElement(url));
-      });
-    } else {
-      mediaContainer.innerHTML = '<p>No additional media available</p>';
+    let stopsHTML = '';
+    
+    // Add start point
+    stopsHTML += `
+      <li class="point start-point">
+        <div class="point-marker"></div>
+        <div class="point-text">${formatLocation(trip.start) || 'Start'}</div>
+      </li>`;
+    
+    // Add intermediate stops
+    if (trip.stops?.length) {
+      stopsHTML += trip.stops
+        .map(stop => `
+          <li class="stop-point">
+            <div class="point-marker"></div>
+            <div class="point-text">${formatLocation(stop)}</div>
+          </li>`)
+        .join('');
     }
+    
+    // Add destination point
+    stopsHTML += `
+      <li class="point end-point">
+        <div class="point-marker"></div>
+        <div class="point-text">${formatLocation(trip.end) || 'Destination'}</div>
+      </li>`;
+    
+    stopsList.innerHTML = stopsHTML;
 
-    document.getElementById('trip-username').textContent = 
-      `Posted by: ${trip.userEmail || 'Unknown user'}`;
-  } catch (error) {
-    console.error('Error:', error);
-    document.getElementById('trip-title').textContent = 'Failed to load trip';
-  }
-  await incrementViews();
+
+    await incrementViews();
     await loadLikeState();
 
     // Add like button event listener
     document.getElementById('likeButton').addEventListener('click', handleLike);
-
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('trip-title').textContent = 'Failed to load trip';
+  }
 }
 
 onAuthStateChanged(auth, user => {

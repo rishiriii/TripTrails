@@ -1,25 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
-  <link rel="stylesheet" href="login-signup.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TripTrails</title>
+    <link rel="stylesheet" href="login-signup.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <h1>Login</h1>
-  <form id="login-form">
-    <label>Email: <input type="email" id="login-email" required></label><br>
-    <label>Password: <input type="password" id="login-password" required></label><br>
-    <button type="submit">Login</button>
-  </form>
-
-  <p><a href="#" id="forgot-password">Forgot Password?</a></p>
-
-  <button id="google-login">Sign In with Google</button>
-  <p>Don't have an account? <a href="signup.html">Sign up here</a></p>
-
-  <script type="module" src="login.js"></script>
-  
+    <div class="container">
+        <div class="form-container">
+            <h1>Welcome Back</h1>
+            <form id="login-form">
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="login-email" placeholder="Email" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="login-password" placeholder="Password" required>
+                </div>
+                <button type="submit" class="primary-btn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+            <div class="divider">
+                <span>OR</span>
+            </div>
+            <button id="google-login" class="google-btn">
+                <i class="fab fa-google"></i>
+                Sign in with Google
+            </button>
+            <div class="links">
+                <a href="#" id="forgot-password" class="forgot-link">
+                    <i class="fas fa-key"></i> Forgot Password?
+                </a>
+                <p class="signup-link">
+                    Don't have an account? 
+                    <a href="signup.html">Sign up</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="login.js"></script>
 </body>
 </html>

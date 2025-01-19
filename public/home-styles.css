@@ -120,9 +120,9 @@
     margin-bottom: 15px;
   }
   
-  /* Popular Destinations */
   .popular-destinations {
     padding: 80px 20px;
+    background: #f8fafc;
   }
   
   .popular-destinations h2 {
@@ -132,20 +132,39 @@
   }
   
   .destination-slider {
-    display: flex;
-    gap: 20px;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 20px;
-    scroll-snap-type: x mandatory;
   }
   
   .destination-card {
-    min-width: 300px;
+    position: relative;
     background: white;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    scroll-snap-align: start;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .destination-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .rank-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(37, 99, 235, 0.9);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+    z-index: 1;
   }
   
   .destination-card img {
@@ -156,6 +175,86 @@
   
   .destination-info {
     padding: 20px;
+  }
+  
+  .destination-info h3 {
+    font-size: 1.4rem;
+    margin-bottom: 12px;
+    color: #1e293b;
+  }
+  
+  .stats {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    color: #64748b;
+    font-size: 0.95rem;
+  }
+  
+  .trip-count {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+    color: #2563eb;
+  }
+  
+  .views, .likes {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  /* Loading and error states */
+  .loading, .error-message, .no-data {
+    text-align: center;
+    padding: 40px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #2563eb;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .retry-button, .add-first-trip {
+    background: #2563eb;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    margin-top: 15px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .retry-button:hover, .add-first-trip:hover {
+    background: #1d4ed8;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .destination-slider {
+      grid-template-columns: 1fr;
+      padding: 10px;
+    }
+    
+    .popular-destinations h2 {
+      font-size: 2rem;
+      margin-bottom: 30px;
+    }
   }
   
   /* CTA Section */
@@ -238,4 +337,42 @@
     .cta h2 {
       font-size: 2rem;
     }
+  }
+
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 100%;
+  }
+  
+  .error-message {
+    color: red;
+    margin: 10px 0;
+  }
+  
+  .suggestion-btn {
+    margin: 5px;
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f5f5f5;
+    cursor: pointer;
+  }
+  
+  .suggestion-btn:hover {
+    background: #e5e5e5;
   }

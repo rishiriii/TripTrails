@@ -1,5 +1,7 @@
 import { auth, storage } from '../firebase.js';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '../firebase.js';
+import { doc, increment, setDoc, getDoc } from 'firebase/firestore';
 
 let stops = [];
 let mediaFiles = [];
@@ -165,6 +167,30 @@ async function uploadMedia(file, userId, tripId) {
   return getDownloadURL(snapshot.ref);
 }
 
+// Add this function to update destination counts
+async function updateDestinationCount(destinationName) {
+  try {
+    const destinationRef = doc(db, 'destinations', destinationName.toLowerCase());
+    const destinationDoc = await getDoc(destinationRef);
+    
+    if (destinationDoc.exists()) {
+      // Update existing destination
+      await setDoc(destinationRef, {
+        name: destinationName,
+        tripCount: increment(1)
+      }, { merge: true });
+    } else {
+      // Create new destination
+      await setDoc(destinationRef, {
+        name: destinationName,
+        tripCount: 1
+      });
+    }
+  } catch (error) {
+    console.error('Error updating destination count:', error);
+  }
+}
+
 document.getElementById('add-trip-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   
@@ -261,6 +287,14 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Failed to save trip data.');
+    }
+
+    // Update destination counts for start, end and stops
+    await updateDestinationCount(startLocation);
+    await updateDestinationCount(endLocation);
+    
+    for (const stop of validStops) {
+      await updateDestinationCount(stop);
     }
 
     alert('Trip added successfully!');

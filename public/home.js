@@ -1,117 +1,103 @@
 // Import Firebase auth if needed
 import { auth } from '../firebase.js';
+import { db } from '../firebase.js';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
-// Firebase auth will be available globally
+const WEATHER_API_KEY = '215f465dceb641daa0e75031251801';
 
-
-// Wait for auth to be ready and get token
 async function getAuthToken() {
-  // Wait for auth initialization
-  await new Promise((resolve) => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      unsubscribe(); // Unsubscribe after first state change
-      resolve(user);
+  try {
+    // Wait for auth initialization
+    await new Promise((resolve) => {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        unsubscribe(); // Unsubscribe after first state change
+        resolve(user);
+      });
     });
-  });
 
-  const user = auth.currentUser;
-  if (!user) {
-    // Redirect to login if no user
-    window.location.href = '/login.html';
+    const user = auth.currentUser;
+    
+    return user.getIdToken();
+  } catch (error) {
+    console.error('Error getting auth token:', error);
     return null;
   }
-  return user.getIdToken();
 }
 
-// Fetch popular destinations from Firebase backend
-async function fetchPopularDestinations() {
+async function getWeatherData(city) {
   try {
-    const token = await getAuthToken();
-    if (!token) return []; // Return empty if no token
-
-    const response = await fetch('/api/trips/popular-destinations', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
+    const response = await fetch(
+      `https://api.weatherapi.com/v1/current.json?key=${WEATHER_API_KEY}&q=${encodeURIComponent(city)}&aqi=no`
+    );
+    const data = await response.json();
+    return {
+      temp: data.current.temp_c,
+      condition: data.current.condition.text,
+      
+    };
   } catch (error) {
-    console.error('Error fetching popular destinations:', error);
-    return [];
+    console.error('Weather fetch error:', error);
+    return null;
   }
 }
 
-// Populate destination slider with data from Firebase
-async function populateDestinations() {
-  const slider = document.getElementById('destinationSlider');
-  
-  // Show loading state
-  slider.innerHTML = `
-    <div class="loading">
-      <div class="loading-spinner"></div>
-      <div>Loading popular destinations...</div>
-    </div>
-  `;
-  
+async function fetchTopDestinations() {
   try {
-    const destinations = await fetchPopularDestinations();
+    // Query Firestore for top 5 destinations
+    const q = query(
+      collection(db, 'destinations'),
+      orderBy('tripCount', 'desc'),
+      limit(5)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const destinations = [];
     
-    if (destinations.length === 0) {
-      slider.innerHTML = `
-        <div class="no-data">
-          <p>No destinations found</p>
-          <button onclick="window.location.href='add-trip.html'" class="add-first-trip">
-            Add Your First Trip
-          </button>
-        </div>
-      `;
-      return;
+    for (const doc of querySnapshot.docs) {
+      const destination = {
+        id: doc.id,
+        ...doc.data()
+      };
+      const weatherData = await getWeatherData(destination.name);
+      destination.weather = weatherData;
+      destinations.push(destination);
     }
 
-    slider.innerHTML = ''; // Clear loading message
-    
-    destinations.forEach(dest => {
-      const card = document.createElement('div');
-      card.className = 'destination-card';
-      
-      card.innerHTML = `
-        <img 
-          src="${dest.image_url || '/images/placeholder.jpg'}" 
-          alt="${dest.location}"
-          loading="lazy"
-          onerror="this.src='/images/placeholder.jpg'"
-        >
-        <div class="destination-info">
-          <h3>${dest.location}</h3>
-          <div class="stats">
-            <span class="trip-count">${dest.trip_count} trips</span>
-            ${dest.views ? `<span class="views">👁 ${dest.views}</span>` : ''}
-            ${dest.likes ? `<span class="likes">❤️ ${dest.likes}</span>` : ''}
+    displayTopDestinations(destinations);
+  } catch (error) {
+    console.error('Error:', error);
+    document.getElementById('top-destinations').innerHTML = 
+      '<p class="error">Failed to load destinations</p>';
+  }
+}
+
+function displayTopDestinations(destinations) {
+  const container = document.getElementById('top-destinations');
+  
+  if (!destinations.length) {
+    container.innerHTML = '<p>No destinations found</p>';
+    return;
+  }
+
+  container.innerHTML = destinations
+    .map((dest, index) => `
+      <div class="destination-card ${index < 3 ? 'top-three' : ''}" 
+           onclick="window.location.href='/explore.html?destination=${encodeURIComponent(dest.name)}'">
+        <div class="rank">#${index + 1}</div>
+        <h3>${dest.name}</h3>
+        <div class="trip-count">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>${dest.tripCount} trips</span>
+        </div>
+        ${dest.weather ? `
+          <div class="weather">
+            <span>${dest.weather.temp}°C</span>
+            <span>${dest.weather.condition}</span>
           </div>
-        </div>
-      `;
-      
-      // Add click handler to navigate to filtered explore page
-      card.addEventListener('click', () => {
-        window.location.href = `/explore.html?location=${encodeURIComponent(dest.location)}`;
-      });
-      
-      slider.appendChild(card);
-    });
-  } catch (error) {
-    console.error('Error populating destinations:', error);
-    slider.innerHTML = `
-      <div class="error-message">
-        <p>Unable to load popular destinations</p>
-        <button onclick="populateDestinations()" class="retry-button">
-          Try Again
-        </button>
+        ` : ''}
       </div>
-    `;
-  }
+    `).join('');
 }
+
+// Initialize once when page loads
+document.addEventListener('DOMContentLoaded', fetchTopDestinations);

@@ -363,6 +363,27 @@ function handleProtectedRoute(user) {
   return true;
 }
 
+// Add authentication check function
+function checkAuth() {
+  return new Promise((resolve) => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      unsubscribe();
+      if (!user) {
+        const confirmLogin = confirm('Please log in to add a trip');
+        if (confirmLogin) {
+          window.location.href = '/login.html';
+        } else {
+          window.location.href = '/';
+        }
+        resolve(false);
+      } else {
+        resolve(true);
+      }
+    });
+  });
+}
+
+
 // Main authentication state observer
 onAuthStateChanged(auth, async (user) => {
   // Check if route is protected
@@ -413,5 +434,6 @@ export {
   generateUsernameSuggestions,
   createUserProfile,
   isProtectedRoute,
-  showAuthModal
+  showAuthModal,
+  checkAuth
 };

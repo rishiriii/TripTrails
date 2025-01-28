@@ -9,31 +9,109 @@ function createMediaGrid(bannerUrl, mediaUrls = []) {
   const mediaGrid = document.getElementById('media-grid');
   mediaGrid.innerHTML = '';
 
-  // Add banner as first item
-  if (bannerUrl) {
-    const bannerItem = document.createElement('div');
-    bannerItem.className = 'media-item';
-    bannerItem.innerHTML = `<img src="${bannerUrl}" alt="Trip Banner" class="media-content">`;
-    mediaGrid.appendChild(bannerItem);
+  // Create carousel track
+  const carouselTrack = document.createElement('div');
+  carouselTrack.className = 'carousel-track';
+
+  // Combine all media into pairs
+  const allMedia = bannerUrl ? [bannerUrl, ...mediaUrls] : mediaUrls;
+  const pairs = [];
+  
+  for (let i = 0; i < allMedia.length; i += 2) {
+    pairs.push(allMedia.slice(i, i + 2));
   }
 
-  // Add remaining media items
-  mediaUrls.forEach(url => {
-    const mediaItem = document.createElement('div');
-    mediaItem.className = 'media-item';
+  // Create slides for each pair
+  pairs.forEach(pair => {
+    const slide = document.createElement('div');
+    slide.className = 'media-item';
     
-    if (url.match(/\.(mp4|webm|ogg)$/i)) {
-      mediaItem.innerHTML = `
-        <video src="${url}" controls class="media-content"></video>
-      `;
-    } else {
-      mediaItem.innerHTML = `
-        <img src="${url}" alt="Trip Media" class="media-content">
-      `;
-    }
+    // Create media elements for the pair
+    pair.forEach(url => {
+      if (url.match(/\.(mp4|webm|ogg)$/i)) {
+        slide.innerHTML += `
+          <video src="${url}" controls class="media-content"></video>
+        `;
+      } else {
+        slide.innerHTML += `
+          <img src="${url}" alt="Trip Media" class="media-content">
+        `;
+      }
+    });
     
-    mediaGrid.appendChild(mediaItem);
+    carouselTrack.appendChild(slide);
   });
+
+  // Add navigation buttons
+  const prevButton = document.createElement('button');
+  prevButton.className = 'carousel-button prev hidden';
+  prevButton.innerHTML = '←';
+
+  const nextButton = document.createElement('button');
+  nextButton.className = 'carousel-button next';
+  nextButton.innerHTML = '→';
+
+  // Add dots indicator
+  const dotsContainer = document.createElement('div');
+  dotsContainer.className = 'carousel-dots';
+
+  // Add all elements to the container
+  mediaGrid.appendChild(carouselTrack);
+  mediaGrid.appendChild(prevButton);
+  mediaGrid.appendChild(nextButton);
+  mediaGrid.appendChild(dotsContainer);
+
+  // Initialize carousel
+  initializeCarousel(carouselTrack, prevButton, nextButton, dotsContainer, pairs.length);
+}
+
+function initializeCarousel(track, prevButton, nextButton, dotsContainer, totalSlides) {
+  let currentIndex = 0;
+
+  // Create dots
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('div');
+    dot.className = `dot ${i === 0 ? 'active' : ''}`;
+    dot.addEventListener('click', () => goToSlide(i));
+    dotsContainer.appendChild(dot);
+  }
+
+  // Update carousel state
+  function updateCarousel() {
+    // Update track position
+    track.style.transform = `translateX(-${currentIndex * 100}%)`;
+    
+    // Update buttons visibility
+    prevButton.className = `carousel-button prev ${currentIndex === 0 ? 'hidden' : ''}`;
+    nextButton.className = `carousel-button next ${currentIndex === totalSlides - 1 ? 'hidden' : ''}`;
+    
+    // Update dots
+    const dots = dotsContainer.getElementsByClassName('dot');
+    Array.from(dots).forEach((dot, index) => {
+      dot.className = `dot ${index === currentIndex ? 'active' : ''}`;
+    });
+  }
+
+  // Navigation functions
+  function goToSlide(index) {
+    currentIndex = index;
+    updateCarousel();
+  }
+
+  prevButton.addEventListener('click', () => {
+    if (currentIndex > 0) {
+      goToSlide(currentIndex - 1);
+    }
+  });
+
+  nextButton.addEventListener('click', () => {
+    if (currentIndex < totalSlides - 1) {
+      goToSlide(currentIndex + 1);
+    }
+  });
+
+  // Initialize carousel state
+  updateCarousel();
 }
 
 function createMediaElement(url) {
@@ -179,8 +257,8 @@ async function loadTripDetails() {
       trip.description || 'No description available';
 
     // Update username display
-    const username = trip.userName || trip.userEmail?.split('@')[0] || 'Unknown user';
-    document.getElementById('trip-username').textContent = `Posted by: ${username}`;
+   const username = trip.authorUsername || trip.authorDisplayName || 'Unknown user';
+document.getElementById('trip-username').textContent = `Posted by: ${username}`;
 
     // Populate stops with start and destination, ensuring proper capitalization
     const stopsList = document.getElementById('trip-stops');

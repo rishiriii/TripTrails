@@ -2,6 +2,7 @@ import { auth, storage } from '../firebase.js';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db } from '../firebase.js';
 import { doc, increment, setDoc, getDoc } from 'firebase/firestore';
+import { checkAuth } from './auth-guard.js';
 
 let stops = [];
 let mediaFiles = [];
@@ -193,6 +194,7 @@ async function updateDestinationCount(destinationName) {
 
 document.getElementById('add-trip-form').addEventListener('submit', async (event) => {
   event.preventDefault();
+  const loadingOverlay = document.createElement('div');
   
   try {
     const user = auth.currentUser;
@@ -230,7 +232,6 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
     }
     
     // Show loading state
-    const loadingOverlay = document.createElement('div');
     loadingOverlay.className = 'loading-overlay active';
     loadingOverlay.innerHTML = `
       <div class="loading-content">
@@ -255,15 +256,13 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
     const validStops = stops.filter(stop => stop.trim() !== '');
 
     const newTrip = {
-      start: startLocation.toLowerCase(),
-      end: endLocation.toLowerCase(),
-      originalStart: startLocation,
-      originalEnd: endLocation,
+      start: startLocation,
+      end: endLocation,
       startDate,
       endDate,
       days,
       nights,
-      expense: parseFloat(formData.get('expense')),
+      expense: parseFloat(formData.get('expense')) || 0,
       description: formData.get('description'),
       visibility: formData.get('visibility'),
       stops: validStops,
@@ -271,8 +270,8 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
       bannerPhoto: bannerUrl,
       mediaUrls: mediaUrls,
       userId: user.uid,
-  userEmail: user.email,
-  userName: user.displayName || user.email
+      userEmail: user.email,
+      userName: user.displayName || user.email
     };
 
     const response = await fetch('/trips', {
@@ -284,18 +283,18 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
       body: JSON.stringify(newTrip),
     });
 
+    const responseData = await response.json();
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to save trip data.');
+      throw new Error(responseData.message || 'Failed to save trip data.');
     }
 
-    // Update destination counts for start, end and stops
-    await updateDestinationCount(startLocation);
-    await updateDestinationCount(endLocation);
-    
-    for (const stop of validStops) {
-      await updateDestinationCount(stop);
-    }
+    // Update destination counts
+    await Promise.all([
+      updateDestinationCount(startLocation),
+      updateDestinationCount(endLocation),
+      ...validStops.map(stop => updateDestinationCount(stop))
+    ]);
 
     alert('Trip added successfully!');
     window.location.href = 'home.html';
@@ -304,24 +303,30 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
     alert(error.message || 'Failed to save trip. Please try again.');
   } finally {
     // Remove loading overlay
-    const loadingOverlay = document.querySelector('.loading-overlay');
-    if (loadingOverlay) {
+    if (loadingOverlay && loadingOverlay.parentNode) {
       loadingOverlay.remove();
     }
   }
 });
 
 // Initialize everything when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Wait for auth state to be determined
+  await new Promise(resolve => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      unsubscribe();
+      if (!user) {
+        window.location.href = '/login.html';
+        return;
+      }
+      resolve();
+    });
+  });
+  
   // Initialize autocomplete for start and end locations
   initializeAutocomplete('start-location');
   initializeAutocomplete('end-location');
   
   // Add stop button handler
   document.getElementById('add-stop-btn').addEventListener('click', addStop);
-  
-  // Add input handlers for title updates
-  const startInput = document.getElementById('start-location');
-  const endInput = document.getElementById('end-location');
- 
 });

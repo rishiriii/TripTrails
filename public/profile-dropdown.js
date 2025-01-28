@@ -66,7 +66,7 @@ async function createProfileDropdown(user) {
     e.preventDefault();
     try {
       await signOut(auth);
-      window.location.href = 'login.html';
+      window.location.href = 'home.html';
     } catch (error) {
       console.error('Error logging out:', error);
       alert('Failed to logout. Please try again.');

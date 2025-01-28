@@ -21,86 +21,107 @@ tripsRouter.get('/search', async (req, res) => {
   try {
     const { start, end } = req.query;
     let query = db.collection('trips');
-    let trips = [];
-
-    // Get all trips first
     const snapshot = await query.get();
     
     if (snapshot.empty) {
       return res.json([]);
     }
 
-    trips = snapshot.docs.map((doc) => ({
+    let trips = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
-    // Filter with partial matching
     if (start || end) {
       const normalizedStart = start ? start.trim().toLowerCase() : '';
       const normalizedEnd = end ? end.trim().toLowerCase() : '';
 
       trips = trips.filter(trip => {
-        // Check if the search term appears anywhere in the location string
+        const tripStart = (trip.start || '').toLowerCase();
+        const tripEnd = (trip.end || '').toLowerCase();
+        const originalStart = (trip.originalStart || '').toLowerCase();
+        const originalEnd = (trip.originalEnd || '').toLowerCase();
+
         const startMatch = !normalizedStart || 
-          trip.start.toLowerCase().includes(normalizedStart) ||
-          (trip.originalStart && trip.originalStart.toLowerCase().includes(normalizedStart));
+          tripStart.includes(normalizedStart) ||
+          originalStart.includes(normalizedStart);
         
         const endMatch = !normalizedEnd || 
-          trip.end.toLowerCase().includes(normalizedEnd) ||
-          (trip.originalEnd && trip.originalEnd.toLowerCase().includes(normalizedEnd));
+          tripEnd.includes(normalizedEnd) ||
+          originalEnd.includes(normalizedEnd);
 
         return startMatch && endMatch;
       });
     }
 
+    trips.sort((a, b) => {
+      const timeA = a.createdAt || 0;
+      const timeB = b.createdAt || 0;
+      return timeB - timeA;
+    });
+
     res.json(trips);
   } catch (error) {
-    console.error('Error searching trips:', error.message);
-    res.status(500).send({ message: 'Error searching trips', error: error.message });
+    res.status(500).json({ message: 'Error searching trips', error: error.message });
   }
 });
 
 // Add a new trip
 tripsRouter.post('/', async (req, res) => {
-  const tripData = req.body;
-
-  // Validate trip data
-  if (
-    !tripData.title ||
-    !tripData.start ||
-    !tripData.end ||
-    !tripData.days ||
-    !tripData.nights ||
-    !tripData.expense ||
-    !tripData.description ||
-    !tripData.bannerPhoto
-  ) {
-    return res.status(400).send({ message: 'Missing required trip fields' });
-  }
-
   try {
+    // Validate request body exists
+    if (!req.body) {
+      return res.status(400).json({ 
+        message: 'Missing request body' 
+      });
+    }
+
+    const tripData = req.body;
+    console.log('Received new trip data:', tripData);
+
+    // Validate trip data
+    const requiredFields = ['title', 'start', 'end', 'days', 'nights', 'expense', 'description', 'bannerPhoto'];
+    const missingFields = requiredFields.filter(field => !tripData[field]);
+    
+    if (missingFields.length > 0) {
+      console.log('Missing required fields:', missingFields);
+      return res.status(400).json({ 
+        message: 'Missing required trip fields', 
+        missingFields 
+      });
+    }
+
     const tripsRef = db.collection('trips');
-    // Store both lowercase and original versions of locations
+    
     const processedTripData = {
       ...tripData,
       start: tripData.start.toLowerCase(),
       end: tripData.end.toLowerCase(),
-      originalStart: tripData.start, // Keep original case for display
-      originalEnd: tripData.end,     // Keep original case for display
+      originalStart: tripData.start, 
+      originalEnd: tripData.end,     
       userId: req.user.uid,
+      createdAt: Date.now(),
+      views: 0,
+      likes: 0,
+      stops: tripData.stops || []
     };
 
+    console.log('Saving trip with data:', processedTripData);
     const docRef = await tripsRef.add(processedTripData);
+    console.log('Successfully saved trip with ID:', docRef.id);
 
-    res.status(201).send({
+    return res.status(201).json({
       id: docRef.id,
       message: 'Trip added successfully',
-      data: tripData,
+      data: processedTripData,
     });
   } catch (error) {
-    console.error('Error adding trip:', error.message);
-    res.status(500).send({ message: 'Error adding trip', error: error.message });
+    console.error('Error adding trip:', error);
+    // Send a properly formatted JSON response
+    return res.status(500).json({ 
+      message: 'Error adding trip', 
+      error: error.message 
+    });
   }
 });
 
@@ -138,9 +159,23 @@ tripsRouter.get('/:id', async (req, res) => {
       return res.status(404).send({ message: 'Trip not found' });
     }
 
+    const tripData = tripDoc.data();
+    
+    
+    const userProfilesRef = db.collection('userProfiles');
+    const userQuery = userProfilesRef.where('uid', '==', tripData.userId); 
+    const userSnapshot = await userQuery.get();
+    
+    let userData = { username: 'Unknown user' };
+    if (!userSnapshot.empty) {
+      userData = userSnapshot.docs[0].data();
+    }
+
     res.json({
       id: tripDoc.id,
-      ...tripDoc.data(),
+      ...tripData,
+      authorUsername: userData.username,
+      authorDisplayName: userData.displayName
     });
   } catch (error) {
     console.error('Error fetching trip:', error.message);
@@ -172,7 +207,7 @@ tripsRouter.delete('/:id', async (req, res) => {
   }
 });
 
-// Update specific fields in a trip
+// Update fields in a trip
 tripsRouter.patch('/:id', async (req, res) => {
   const tripId = req.params.id;
   const updateData = req.body;
@@ -185,7 +220,7 @@ tripsRouter.patch('/:id', async (req, res) => {
       return res.status(404).send({ message: 'Trip not found' });
     }
 
-    // Update the trip document
+    // Update the trip 
     await tripRef.update(updateData);
     res.status(200).send({ message: 'Trip updated successfully' });
   } catch (error) {
@@ -205,7 +240,7 @@ tripsRouter.post('/:id/views', async (req, res) => {
         return res.status(404).send({ message: 'Trip not found' });
       }
   
-      // Use a transaction to safely increment the view count
+      // increment the view count
       await db.runTransaction(async (transaction) => {
         const doc = await transaction.get(tripRef);
         const currentViews = doc.data().views || 0;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TripTrails - Explore</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="explore.css">
 </head>
 <body>
   <header>
@@ -32,7 +32,71 @@
       <div class="search-form">
         <input type="text" id="start-location" placeholder="Starting Location" class="search-input">
         <input type="text" id="end-location" placeholder="Destination" class="search-input">
+        <button id="filter-btn" class="filter-button">
+          <span class="filter-icon"></span> Filters
+        </button>
         <button id="search-btn" class="search-button">Search Trips</button>
+      </div>
+    </div>
+
+    <!-- Filter Modal -->
+    <div id="filter-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Filter Trips</h2>
+          <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+          <!-- Number of Stops -->
+          <div class="filter-section">
+            <h3>Number of Stops</h3>
+            <select id="stops-filter">
+              <option value="">Any</option>
+              <option value="0-2">0-2 stops</option>
+              <option value="3-5">3-5 stops</option>
+              <option value="6-10">6-10 stops</option>
+              <option value="10+">10+ stops</option>
+            </select>
+          </div>
+
+          <!-- Expense Range -->
+          <div class="filter-section">
+            <h3>Budget Range</h3>
+            <div class="range-slider">
+              <input type="range" id="expense-slider" min="0" max="10000" step="100" value="10000">
+              <span id="expense-value">$10,000</span>
+            </div>
+          </div>
+
+          <!-- Duration -->
+          <div class="filter-section">
+            <h3>Duration</h3>
+            <div class="duration-inputs">
+              <div>
+                <label for="min-days">Min Days:</label>
+                <input type="number" id="min-days" min="1" max="30" value="1">
+              </div>
+              <div>
+                <label for="max-days">Max Days:</label>
+                <input type="number" id="max-days" min="1" max="30" value="30">
+              </div>
+            </div>
+          </div>
+
+          <!-- Sort By -->
+          <div class="filter-section">
+            <h3>Sort By</h3>
+            <select id="sort-by">
+              <option value="recent">Most Recent</option>
+              <option value="views">Most Viewed</option>
+              <option value="likes">Most Liked</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="reset-filters" class="secondary-btn">Reset</button>
+          <button id="apply-filters" class="primary-btn">Apply Filters</button>
+        </div>
       </div>
     </div>
 

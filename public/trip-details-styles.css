@@ -349,3 +349,82 @@ h1 {
     padding: 12px 20px;
   }
 }
+
+  .attractions-section {
+    background: white;
+    padding: 32px;
+    border-radius: var(--border-radius);
+    margin: 32px 0;
+    box-shadow: var(--box-shadow);
+  }
+
+  .attractions-container {
+    position: relative;
+    overflow: hidden;
+    margin-top: 20px;
+  }
+
+  .attractions-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 20px;
+    padding: 10px 0;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .attraction-card {
+    flex: 0 0 250px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.2s;
+    scroll-snap-align: start;
+  }
+
+  .attraction-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .attraction-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+  }
+
+  .attraction-details {
+    padding: 12px;
+  }
+
+  .attraction-details h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .stars {
+    color: #ffd700;
+  }
+
+  .rating-text {
+    color: #666;
+  }
+
+  @media (max-width: 768px) {
+    .attractions-section {
+      padding: 20px;
+    }
+
+    .attraction-card {
+      flex: 0 0 200px;
+    }
+  }

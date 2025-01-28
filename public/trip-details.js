@@ -114,27 +114,6 @@ function initializeCarousel(track, prevButton, nextButton, dotsContainer, totalS
   updateCarousel();
 }
 
-function createMediaElement(url) {
-  const container = document.createElement('div');
-  container.className = 'media-item';
-
-  if (url.match(/\.(mp4|webm|ogg)$/i)) {
-    const video = document.createElement('video');
-    video.src = url;
-    video.controls = true;
-    video.className = 'media-content';
-    container.appendChild(video);
-  } else {
-    const img = document.createElement('img');
-    img.src = url;
-    img.alt = 'Trip Media';
-    img.className = 'media-content';
-    container.appendChild(img);
-  }
-
-  return container;
-}
-
 async function incrementViews() {
   try {
     const token = await auth.currentUser.getIdToken();
@@ -245,7 +224,7 @@ async function loadTripDetails() {
         .join(' ');
     };
 
-    // Populate trip details with properly formatted locations
+    // Populate trip details
     document.getElementById('trip-title').textContent = trip.title || 'No Title';
     document.getElementById('trip-start-end').textContent = 
       `${formatLocation(trip.start) || 'Unknown'} to ${formatLocation(trip.end) || 'Unknown'}`;
@@ -255,12 +234,10 @@ async function loadTripDetails() {
       `$${trip.expense || 0}`;
     document.getElementById('trip-description').textContent = 
       trip.description || 'No description available';
+    document.getElementById('trip-username').textContent = 
+      `Posted by: ${trip.authorUsername || trip.authorDisplayName || 'Unknown user'}`;
 
-    // Update username display
-   const username = trip.authorUsername || trip.authorDisplayName || 'Unknown user';
-document.getElementById('trip-username').textContent = `Posted by: ${username}`;
-
-    // Populate stops with start and destination, ensuring proper capitalization
+    // Populate stops
     const stopsList = document.getElementById('trip-stops');
     let stopsHTML = '';
     
@@ -291,10 +268,10 @@ document.getElementById('trip-username').textContent = `Posted by: ${username}`;
     
     stopsList.innerHTML = stopsHTML;
 
-
     await incrementViews();
     await loadLikeState();
-
+    await displayNearbyAttractions(trip.end);
+    
     // Add like button event listener
     document.getElementById('likeButton').addEventListener('click', handleLike);
   } catch (error) {
@@ -303,10 +280,190 @@ document.getElementById('trip-username').textContent = `Posted by: ${username}`;
   }
 }
 
-onAuthStateChanged(auth, user => {
-  if (!user) {
-    window.location.href = 'login.html';
-  } else {
-    loadTripDetails();
+async function fetchNearbyAttractions(location) {
+  try {
+    if (!google?.maps?.places) {
+      console.warn('Google Maps Places API not loaded');
+      return [];
+    }
+
+    // Create PlacesService instance using a temporary map div
+    const mapDiv = document.createElement('div');
+    const map = new google.maps.Map(mapDiv, {
+      center: { lat: 0, lng: 0 },
+      zoom: 1
+    });
+    const service = new google.maps.places.PlacesService(map);
+
+    // First get location coordinates using Geocoding service
+    const geocoder = new google.maps.Geocoder();
+    
+    try {
+      const geocodeResult = await new Promise((resolve, reject) => {
+        geocoder.geocode({ address: location }, (results, status) => {
+          if (status === 'OK') {
+            resolve(results[0].geometry.location);
+          } else {
+            // Handle specific geocoding errors
+            switch(status) {
+              case 'ZERO_RESULTS':
+                reject(new Error('Location not found'));
+                break;
+              case 'OVER_QUERY_LIMIT':
+                reject(new Error('API quota exceeded'));
+                break;
+              default:
+                reject(new Error(`Geocoding failed: ${status}`));
+            }
+          }
+        });
+      });
+
+      // Then search for tourist attractions nearby
+      const request = {
+        location: geocodeResult,
+        radius: '5000', // 5km radius
+        type: ['landmark','park','museum','zoo','amusement_park','aquarium','art_gallery','church','hindu_temple','mosque','synagogue','city_hall','courthouse','library','stadium'],
+        rankBy: google.maps.places.RankBy.RATING
+      };
+
+      const placesResult = await new Promise((resolve, reject) => {
+        service.nearbySearch(request, (results, status) => {
+          if (status === 'OK') {
+            resolve(results.slice(0, 20)); // Limit to 20 places
+          } else {
+            reject(new Error(`Places search failed: ${status}`));
+          }
+        });
+      });
+
+      return placesResult;
+    } catch (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error fetching nearby attractions:', error);
+    return [];
   }
+}
+
+function createAttractionCard(place) {
+  const card = document.createElement('div');
+  card.className = 'attraction-card';
+  
+  // Default image path
+  const defaultImagePath = '/images/placeholder-attraction.jpg';
+  
+  // Try to get photo URL with error handling
+  let photoUrl = defaultImagePath;
+  try {
+    if (place.photos && place.photos[0]) {
+      photoUrl = place.photos[0].getUrl({
+        maxWidth: 200,
+        maxHeight: 200
+      });
+    }
+  } catch (error) {
+    console.warn('Failed to get photo URL for place:', place.name);
+    photoUrl = defaultImagePath;
+  }
+
+  const ratingStars = place.rating 
+    ? '★'.repeat(Math.floor(place.rating)) + '☆'.repeat(5 - Math.floor(place.rating))
+    : '☆☆☆☆☆';
+
+  card.innerHTML = `
+    <div class="attraction-image-container">
+      <img 
+        src="${photoUrl}" 
+        alt="${place.name}"
+        class="attraction-image"
+        onerror="this.onerror=null; this.src='${defaultImagePath}'"
+      >
+    </div>
+    <div class="attraction-details">
+      <h3>${place.name}</h3>
+      <div class="rating">
+        ${place.rating ? `
+          <span class="stars" title="${place.rating} out of 5 stars">${ratingStars}</span>
+          <span class="rating-text">${place.rating.toFixed(1)} (${place.user_ratings_total || 0} reviews)</span>
+        ` : '<span class="no-rating">No ratings yet</span>'}
+      </div>
+      ${place.vicinity ? `<p class="vicinity">${place.vicinity}</p>` : ''}
+    </div>
+  `;
+
+  card.addEventListener('click', () => {
+    const mapsUrl = `https://www.google.com/maps/place/?q=place_id:${place.place_id}`;
+    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+  });
+
+  return card;
+}
+
+async function displayNearbyAttractions(location) {
+  // Create container for attractions section
+  const attractionsSection = document.createElement('div');
+  attractionsSection.className = 'attractions-section';
+  attractionsSection.innerHTML = `
+    <h2>Popular Attractions Nearby</h2>
+    <div class="attractions-container">
+      <div class="attractions-scroll">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+  `;
+
+  // Insert after the timeline container
+  const timelineContainer = document.querySelector('.timeline-container');
+  timelineContainer.insertAdjacentElement('afterend', attractionsSection);
+
+  try {
+    // Fetch attractions
+    const attractions = await fetchNearbyAttractions(location);
+    const scrollContainer = attractionsSection.querySelector('.attractions-scroll');
+    
+    // Handle no results
+    if (!attractions || attractions.length === 0) {
+      scrollContainer.innerHTML = `
+        <div class="no-attractions">
+          <p>Unable to load attractions for this location.</p>
+          <p>You can still explore the area on 
+            <a href="https://www.google.com/maps/search/attractions+in+${encodeURIComponent(location)}" 
+               target="_blank" rel="noopener noreferrer">Google Maps</a>
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    // Display attractions
+    scrollContainer.innerHTML = '';
+    attractions.forEach(place => {
+      const card = createAttractionCard(place);
+      scrollContainer.appendChild(card);
+    });
+
+  } catch (error) {
+    const scrollContainer = attractionsSection.querySelector('.attractions-scroll');
+    scrollContainer.innerHTML = `
+      <div class="error-message">
+        <p>${error.message}</p>
+        <p>You can still explore the area on 
+          <a href="https://www.google.com/maps/search/attractions+in+${encodeURIComponent(location)}" 
+             target="_blank" rel="noopener noreferrer">Google Maps</a>
+        </p>
+      </div>
+    `;
+  }
+}
+
+// Initialize the page when authentication state changes
+onAuthStateChanged(auth, user => {
+if (!user) {
+  window.location.href = 'login.html';
+} else {
+  loadTripDetails();
+}
 });
+          

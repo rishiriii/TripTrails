@@ -4,6 +4,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 const urlParams = new URLSearchParams(window.location.search);
 const tripId = urlParams.get('id');
 let isLiked = false;
+let googleMapsLoadAttempts = 0;
+const MAX_LOAD_ATTEMPTS = 20; // 2 seconds maximum wait time
 
 function createMediaGrid(bannerUrl, mediaUrls = []) {
   const mediaGrid = document.getElementById('media-grid');
@@ -280,70 +282,147 @@ async function loadTripDetails() {
   }
 }
 
+async function waitForGoogleMaps() {
+  return new Promise((resolve, reject) => {
+    const checkAPI = setInterval(() => {
+      googleMapsLoadAttempts++;
+      
+      // Check if Google Maps is loaded
+      if (window.google && window.google.maps && window.google.maps.places) {
+        clearInterval(checkAPI);
+        console.log('Google Maps API loaded successfully');
+        resolve();
+      }
+      
+      // Give up after max attempts (2 seconds)
+      if (googleMapsLoadAttempts >= MAX_LOAD_ATTEMPTS) {
+        clearInterval(checkAPI);
+        reject(new Error('Google Maps API failed to load'));
+      }
+    }, 100); // Check every 100ms
+  });
+}
+
 async function fetchNearbyAttractions(location) {
   try {
-    if (!google?.maps?.places) {
-      console.warn('Google Maps Places API not loaded');
-      return [];
-    }
+    await waitForGoogleMaps();
 
-    // Create PlacesService instance using a temporary map div
+    // Create a hidden map element
     const mapDiv = document.createElement('div');
+    mapDiv.style.display = 'none';
+    document.body.appendChild(mapDiv);
+
     const map = new google.maps.Map(mapDiv, {
       center: { lat: 0, lng: 0 },
       zoom: 1
     });
+
     const service = new google.maps.places.PlacesService(map);
-
-    // First get location coordinates using Geocoding service
     const geocoder = new google.maps.Geocoder();
-    
-    try {
-      const geocodeResult = await new Promise((resolve, reject) => {
-        geocoder.geocode({ address: location }, (results, status) => {
-          if (status === 'OK') {
-            resolve(results[0].geometry.location);
-          } else {
-            // Handle specific geocoding errors
-            switch(status) {
-              case 'ZERO_RESULTS':
-                reject(new Error('Location not found'));
-                break;
-              case 'OVER_QUERY_LIMIT':
-                reject(new Error('API quota exceeded'));
-                break;
-              default:
-                reject(new Error(`Geocoding failed: ${status}`));
-            }
-          }
-        });
-      });
 
-      // Then search for tourist attractions nearby
+    console.log('Geocoding location:', location);
+
+    // Get location coordinates
+    const geocodeResult = await new Promise((resolve, reject) => {
+      geocoder.geocode({ address: location }, (results, status) => {
+        console.log('Geocode status:', status);
+        if (status === 'OK') {
+          resolve(results[0].geometry.location);
+        } else {
+          reject(new Error(`Geocoding failed: ${status}`));
+        }
+      });
+    });
+
+    // Convert the location to a proper format
+    const locationLatLng = {
+      lat: geocodeResult.lat(),
+      lng: geocodeResult.lng()
+    };
+
+    console.log('Location coordinates:', locationLatLng);
+
+    // Try different search types sequentially
+    const searchTypes = [
+      'tourist_attraction',
+      'point_of_interest',
+      'natural_feature',
+      'church',
+      'hindu_temple',
+      'mosque',
+      'museum'
+    ];
+
+    let allPlaces = [];
+
+    for (const type of searchTypes) {
+      if (allPlaces.length >= 20) break; // Stop if we have enough places
+
       const request = {
-        location: geocodeResult,
-        radius: '5000', // 5km radius
-        type: ['landmark','park','museum','zoo','amusement_park','aquarium','art_gallery','church','hindu_temple','mosque','synagogue','city_hall','courthouse','library','stadium'],
-        rankBy: google.maps.places.RankBy.RATING
+        location: locationLatLng,
+        radius: 5000,  // 5km radius
+        type: type,
+        language: 'en'  // Ensure English results
       };
 
-      const placesResult = await new Promise((resolve, reject) => {
-        service.nearbySearch(request, (results, status) => {
-          if (status === 'OK') {
-            resolve(results.slice(0, 20)); // Limit to 20 places
-          } else {
-            reject(new Error(`Places search failed: ${status}`));
-          }
-        });
-      });
+      console.log(`Searching for places of type: ${type}`);
 
-      return placesResult;
-    } catch (error) {
-      throw error;
+      try {
+        const results = await new Promise((resolve, reject) => {
+          setTimeout(() => { // Add a small delay between requests
+            service.nearbySearch(request, (results, status) => {
+              console.log(`Search status for ${type}:`, status);
+              if (status === 'OK') {
+                resolve(results);
+              } else if (status === 'ZERO_RESULTS') {
+                resolve([]);
+              } else {
+                console.warn(`Search failed for type ${type} with status: ${status}`);
+                resolve([]); // Continue with empty results instead of rejecting
+              }
+            });
+          }, 200); // 200ms delay
+        });
+
+        if (results && results.length > 0) {
+          allPlaces = [...allPlaces, ...results];
+          console.log(`Found ${results.length} places of type ${type}`);
+        }
+      } catch (error) {
+        console.warn(`Error searching for type ${type}:`, error);
+        continue; // Try next type if this one fails
+      }
     }
+
+    // Clean up
+    document.body.removeChild(mapDiv);
+
+    if (allPlaces.length === 0) {
+      console.log('No places found after trying all types');
+      return [];
+    }
+
+    // Sort by rating and remove duplicates
+    const uniquePlaces = Array.from(
+      new Map(allPlaces.map(place => [place.place_id, place])).values()
+    );
+
+    const sortedPlaces = uniquePlaces
+      .sort((a, b) => {
+        // Sort by rating first
+        const ratingDiff = (b.rating || 0) - (a.rating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        // If ratings are equal, sort by number of ratings
+        return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
+      })
+      .slice(0, 20);
+
+    console.log(`Returning ${sortedPlaces.length} unique places`);
+    return sortedPlaces;
+
   } catch (error) {
-    console.error('Error fetching nearby attractions:', error);
-    return [];
+    console.error('Error in fetchNearbyAttractions:', error);
+    throw error;
   }
 }
 
@@ -402,32 +481,48 @@ function createAttractionCard(place) {
 }
 
 async function displayNearbyAttractions(location) {
-  // Create container for attractions section
-  const attractionsSection = document.createElement('div');
-  attractionsSection.className = 'attractions-section';
-  attractionsSection.innerHTML = `
-    <h2>Popular Attractions Nearby</h2>
-    <div class="attractions-container">
-      <div class="attractions-scroll">
-        <div class="loading-spinner"></div>
-      </div>
-    </div>
-  `;
+  if (!location) {
+    console.error('No location provided to displayNearbyAttractions');
+    return;
+  }
 
-  // Insert after the timeline container
-  const timelineContainer = document.querySelector('.timeline-container');
-  timelineContainer.insertAdjacentElement('afterend', attractionsSection);
+  console.log('Starting to display nearby attractions for:', location);
 
   try {
+    // Create container for attractions section if it doesn't exist
+    let attractionsSection = document.querySelector('.attractions-section');
+    if (!attractionsSection) {
+      attractionsSection = document.createElement('div');
+      attractionsSection.className = 'attractions-section';
+      const timelineContainer = document.querySelector('.timeline-container');
+      if (!timelineContainer) {
+        console.error('Timeline container not found');
+        return;
+      }
+      timelineContainer.insertAdjacentElement('afterend', attractionsSection);
+    }
+
+    // Show loading state
+    attractionsSection.innerHTML = `
+      <h2>Popular Attractions Nearby</h2>
+      <div class="attractions-container">
+        <div class="attractions-scroll">
+          <div class="loading-spinner">Loading attractions...</div>
+        </div>
+      </div>
+    `;
+
     // Fetch attractions
+    console.log('Fetching attractions...');
     const attractions = await fetchNearbyAttractions(location);
+    console.log('Fetched attractions:', attractions);
+
     const scrollContainer = attractionsSection.querySelector('.attractions-scroll');
-    
-    // Handle no results
+
     if (!attractions || attractions.length === 0) {
       scrollContainer.innerHTML = `
         <div class="no-attractions">
-          <p>Unable to load attractions for this location.</p>
+          <p>No attractions found for this location.</p>
           <p>You can still explore the area on 
             <a href="https://www.google.com/maps/search/attractions+in+${encodeURIComponent(location)}" 
                target="_blank" rel="noopener noreferrer">Google Maps</a>
@@ -445,18 +540,28 @@ async function displayNearbyAttractions(location) {
     });
 
   } catch (error) {
-    const scrollContainer = attractionsSection.querySelector('.attractions-scroll');
-    scrollContainer.innerHTML = `
-      <div class="error-message">
-        <p>${error.message}</p>
-        <p>You can still explore the area on 
-          <a href="https://www.google.com/maps/search/attractions+in+${encodeURIComponent(location)}" 
-             target="_blank" rel="noopener noreferrer">Google Maps</a>
-        </p>
-      </div>
-    `;
+    console.error('Error in displayNearbyAttractions:', error);
+    const attractionsSection = document.querySelector('.attractions-section');
+    if (attractionsSection) {
+      attractionsSection.innerHTML = `
+        <h2>Popular Attractions Nearby</h2>
+        <div class="error-message">
+          <p>Unable to load attractions: ${error.message}</p>
+          <p>You can still explore the area on 
+            <a href="https://www.google.com/maps/search/attractions+in+${encodeURIComponent(location)}" 
+               target="_blank" rel="noopener noreferrer">Google Maps</a>
+          </p>
+        </div>
+      `;
+    }
   }
 }
+
+// Make sure initMap is defined and globally accessible
+window.initMap = function() {
+  console.log('initMap called');
+  window.googleMapsLoaded = true;
+};
 
 // Initialize the page when authentication state changes
 onAuthStateChanged(auth, user => {
@@ -466,4 +571,5 @@ if (!user) {
   loadTripDetails();
 }
 });
+          
           

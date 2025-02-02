@@ -5,10 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trip Details</title>
   <link rel="stylesheet" href="trip-details-styles.css">
-  <script async
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB_5mhqQMQXHMIT64e4UtTaUksAoMw0AfU&libraries=places"
-  onerror="handleMapsError()">
-</script>
+  <script>
+    function initGoogleMapsAPI() {
+      console.log('Google Maps API loading callback triggered');
+      window.googleMapsLoaded = true;
+      if (window.initMap) {
+        window.initMap();
+      }
+    }
+  </script>
+  <script 
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCLfBjaijHnnRh2SNhqR4Xy_a98qiUbc5g&libraries=places"
+  async
+  defer
+></script>
 </head>
 <body>
   <div class="container">

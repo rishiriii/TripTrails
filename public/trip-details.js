@@ -307,7 +307,6 @@ async function fetchNearbyAttractions(location) {
   try {
     await waitForGoogleMaps();
 
-    // Create a hidden map element
     const mapDiv = document.createElement('div');
     mapDiv.style.display = 'none';
     document.body.appendChild(mapDiv);
@@ -322,7 +321,6 @@ async function fetchNearbyAttractions(location) {
 
     console.log('Geocoding location:', location);
 
-    // Get location coordinates
     const geocodeResult = await new Promise((resolve, reject) => {
       geocoder.geocode({ address: location }, (results, status) => {
         console.log('Geocode status:', status);
@@ -334,42 +332,106 @@ async function fetchNearbyAttractions(location) {
       });
     });
 
-    // Convert the location to a proper format
     const locationLatLng = {
       lat: geocodeResult.lat(),
       lng: geocodeResult.lng()
     };
 
-    console.log('Location coordinates:', locationLatLng);
+    // Expanded list of exclude keywords
+    const excludeKeywords = [
+      // Businesses and services
+      'enterprise', 'enterprises', 'company', 'companies', 'corporation',
+      'business', 'office', 'services', 'service', 'consultant',
+      'consultancy', 'agency', 'bureau', 'firm', 'limited', 'ltd',
+      'private', 'pvt', 'solutions', 'tours', 'travels', 'travel',
+      'booking', 'reservation',
 
-    // Try different search types sequentially
+      // Healthcare
+      'doctor', 'clinic', 'hospital', 'medical', 'healthcare', 'pharmacy',
+      'diagnostic', 'laboratory', 'lab', 'dental', 'dentist', 'physician',
+
+      // Education
+      'school', 'college', 'university', 'institute', 'academy',
+      'education', 'training', 'coaching', 'tuition',
+
+      // Residential
+      'house', 'apartment', 'flat', 'residence', 'residential',
+      'colony', 'society', 'building', 'tower',
+
+      // Commercial
+      'shop', 'store', 'market', 'mall', 'supermarket', 'mart',
+      'showroom', 'outlet', 'retail', 'wholesale', 'dealer',
+
+      // Food and accommodation
+      'restaurant', 'cafe', 'hotel', 'lodge', 'resort', 'inn',
+      'dhaba', 'catering', 'food',
+
+      // Transportation
+      'transport', 'cargo', 'logistics', 'courier', 'parking',
+      'garage', 'workshop', 'service center',
+
+      // Others
+      'bank', 'atm', 'insurance', 'finance', 'loan', 'investment',
+      'construction', 'contractor', 'developer', 'estate', 'property'
+    ];
+
+    // Expanded list of tourist keywords
+    const touristKeywords = [
+      // Religious and spiritual
+      'temple', 'mandir', 'church', 'mosque', 'masjid', 'dargah',
+      'shrine', 'monastery', 'ashram', 'math',
+
+      // Historical
+      'fort', 'palace', 'castle', 'ruins', 'ancient', 'historic',
+      'heritage', 'archaeological', 'monument', 'memorial', 'tomb',
+      'mausoleum', 'haveli',
+
+      // Natural attractions
+      'beach', 'sea', 'lake', 'river', 'waterfall', 'falls',
+      'mountain', 'hill', 'peak', 'valley', 'cave', 'garden',
+      'park', 'sanctuary', 'national park', 'wildlife', 'forest',
+      'nature', 'botanical', 'zoo', 'aquarium',
+
+      // Cultural
+      'museum', 'gallery', 'art', 'culture', 'heritage', 'statue',
+      'sculpture', 'landmark', 'point of interest', 'viewpoint',
+      'observation', 'lookout',
+
+      // Entertainment
+      'amusement park', 'water park', 'theme park', 'entertainment',
+      'recreation', 'adventure', 'safari',
+
+      // Tourism specific
+      'tourist', 'tourism', 'sightseeing', 'attraction', 'destination',
+      'heritage site', 'world heritage'
+    ];
+
     const searchTypes = [
       'tourist_attraction',
-      'point_of_interest',
       'natural_feature',
-      'church',
-      'hindu_temple',
-      'mosque',
-      'museum'
+      'point_of_interest',
+      'establishment',
+      'park',
+      'museum',
+      'place_of_worship',
+      'landmark'
     ];
 
     let allPlaces = [];
 
     for (const type of searchTypes) {
-      if (allPlaces.length >= 20) break; // Stop if we have enough places
+      if (allPlaces.length >= 20) break;
 
       const request = {
         location: locationLatLng,
-        radius: 5000,  // 5km radius
+        radius: 5000,
         type: type,
-        language: 'en'  // Ensure English results
+        language: 'en'
       };
-
-      console.log(`Searching for places of type: ${type}`);
 
       try {
         const results = await new Promise((resolve, reject) => {
-          setTimeout(() => { // Add a small delay between requests
+          setTimeout(() => {
             service.nearbySearch(request, (results, status) => {
               console.log(`Search status for ${type}:`, status);
               if (status === 'OK') {
@@ -378,46 +440,102 @@ async function fetchNearbyAttractions(location) {
                 resolve([]);
               } else {
                 console.warn(`Search failed for type ${type} with status: ${status}`);
-                resolve([]); // Continue with empty results instead of rejecting
+                resolve([]);
               }
             });
-          }, 200); // 200ms delay
+          }, 200);
         });
 
         if (results && results.length > 0) {
-          allPlaces = [...allPlaces, ...results];
-          console.log(`Found ${results.length} places of type ${type}`);
+          const filteredResults = results.filter(place => {
+            const name = place.name.toLowerCase();
+            const types = place.types.map(t => t.toLowerCase());
+            
+            // Check for exclude keywords in name
+            const hasExcludeWord = excludeKeywords.some(keyword => 
+              name.includes(keyword.toLowerCase())
+            );
+            if (hasExcludeWord) return false;
+
+            // Check for business-related types
+            const hasBusinessType = types.some(t => [
+              'store',
+              'doctor',
+              'health',
+              'lodging',
+              'restaurant',
+              'food',
+              'car_dealer',
+              'car_repair',
+              'car_rental',
+              'travel_agency',
+              'real_estate_agency',
+              'insurance_agency',
+              'local_government_office',
+              'lawyer',
+              'accounting',
+              'finance',
+              'bank',
+              'school'
+            ].includes(t));
+            if (hasBusinessType) return false;
+
+            // Must have either a tourist keyword or be a tourist type
+            const hasTouristKeyword = touristKeywords.some(keyword => 
+              name.includes(keyword.toLowerCase())
+            );
+            
+            const hasTouristType = types.some(t => [
+              'tourist_attraction',
+              'museum',
+              'art_gallery',
+              'aquarium',
+              'amusement_park',
+              'park',
+              'natural_feature',
+              'place_of_worship',
+              'landmark'
+            ].includes(t));
+
+            return hasTouristKeyword || hasTouristType;
+          });
+
+          allPlaces = [...allPlaces, ...filteredResults];
+          console.log(`Found ${filteredResults.length} tourist places of type ${type}`);
         }
       } catch (error) {
         console.warn(`Error searching for type ${type}:`, error);
-        continue; // Try next type if this one fails
+        continue;
       }
     }
 
-    // Clean up
     document.body.removeChild(mapDiv);
 
     if (allPlaces.length === 0) {
-      console.log('No places found after trying all types');
+      console.log('No tourist places found after filtering');
       return [];
     }
 
-    // Sort by rating and remove duplicates
     const uniquePlaces = Array.from(
       new Map(allPlaces.map(place => [place.place_id, place])).values()
     );
 
     const sortedPlaces = uniquePlaces
       .sort((a, b) => {
-        // Sort by rating first
+        // Prioritize places with photos
+        if (a.photos && !b.photos) return -1;
+        if (!a.photos && b.photos) return 1;
+        
+        // Then sort by rating
         const ratingDiff = (b.rating || 0) - (a.rating || 0);
         if (ratingDiff !== 0) return ratingDiff;
+        
         // If ratings are equal, sort by number of ratings
         return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
       })
       .slice(0, 20);
 
-    console.log(`Returning ${sortedPlaces.length} unique places`);
+    console.log(`Returning ${sortedPlaces.length} filtered tourist places`);
     return sortedPlaces;
 
   } catch (error) {
@@ -433,17 +551,47 @@ function createAttractionCard(place) {
   // Default image path
   const defaultImagePath = '/images/placeholder-attraction.jpg';
   
-  // Try to get photo URL with error handling
+  // Try to get the best photo URL with error handling
   let photoUrl = defaultImagePath;
   try {
-    if (place.photos && place.photos[0]) {
-      photoUrl = place.photos[0].getUrl({
-        maxWidth: 200,
-        maxHeight: 200
+    if (place.photos && place.photos.length > 0) {
+      // Sort photos by width to get landscape/banner-style images
+      const sortedPhotos = [...place.photos].sort((a, b) => {
+        // Get photo metadata
+        const aWidth = a.width || 0;
+        const aHeight = a.height || 0;
+        const bWidth = b.width || 0;
+        const bHeight = b.height || 0;
+
+        // Calculate aspect ratios (width/height)
+        const aRatio = aWidth / aHeight;
+        const bRatio = bWidth / bHeight;
+
+        // Prefer landscape photos (ratio > 1) and photos closer to 16:9 ratio
+        const idealRatio = 16/9;
+        const aDiff = Math.abs(aRatio - idealRatio);
+        const bDiff = Math.abs(bRatio - idealRatio);
+
+        return aDiff - bDiff;
       });
+
+      // Try to get a good landscape photo
+      const bestPhoto = sortedPhotos[0];
+      photoUrl = bestPhoto.getUrl({
+        maxWidth: 400,  // Increased size for better quality
+        maxHeight: 300  // Maintain 4:3 aspect ratio minimum
+      });
+
+      // Fallback to first photo if something goes wrong
+      if (!photoUrl) {
+        photoUrl = place.photos[0].getUrl({
+          maxWidth: 400,
+          maxHeight: 300
+        });
+      }
     }
   } catch (error) {
-    console.warn('Failed to get photo URL for place:', place.name);
+    console.warn('Failed to get photo URL for place:', place.name, error);
     photoUrl = defaultImagePath;
   }
 
@@ -459,18 +607,55 @@ function createAttractionCard(place) {
         class="attraction-image"
         onerror="this.onerror=null; this.src='${defaultImagePath}'"
       >
+      ${place.rating ? `
+        <div class="rating-badge">
+          <span class="rating-number">${place.rating.toFixed(1)}</span>
+          <span class="rating-star">★</span>
+        </div>
+      ` : ''}
     </div>
     <div class="attraction-details">
       <h3>${place.name}</h3>
       <div class="rating">
         ${place.rating ? `
           <span class="stars" title="${place.rating} out of 5 stars">${ratingStars}</span>
-          <span class="rating-text">${place.rating.toFixed(1)} (${place.user_ratings_total || 0} reviews)</span>
+          <span class="rating-text">(${place.user_ratings_total || 0} reviews)</span>
         ` : '<span class="no-rating">No ratings yet</span>'}
       </div>
       ${place.vicinity ? `<p class="vicinity">${place.vicinity}</p>` : ''}
     </div>
   `;
+
+  // Add hover effect for image gallery if multiple photos exist
+  if (place.photos && place.photos.length > 1) {
+    const imageContainer = card.querySelector('.attraction-image-container');
+    let currentPhotoIndex = 0;
+    
+    imageContainer.addEventListener('mouseenter', () => {
+      const interval = setInterval(() => {
+        currentPhotoIndex = (currentPhotoIndex + 1) % place.photos.length;
+        try {
+          const nextPhotoUrl = place.photos[currentPhotoIndex].getUrl({
+            maxWidth: 400,
+            maxHeight: 300
+          });
+          const img = imageContainer.querySelector('img');
+          img.src = nextPhotoUrl;
+        } catch (error) {
+          console.warn('Failed to cycle photo:', error);
+        }
+      }, 2000); // Change photo every 2 seconds
+      
+      imageContainer.dataset.interval = interval;
+    });
+
+    imageContainer.addEventListener('mouseleave', () => {
+      clearInterval(Number(imageContainer.dataset.interval));
+      // Reset to best photo
+      const img = imageContainer.querySelector('img');
+      img.src = photoUrl;
+    });
+  }
 
   card.addEventListener('click', () => {
     const mapsUrl = `https://www.google.com/maps/place/?q=place_id:${place.place_id}`;
@@ -570,6 +755,20 @@ if (!user) {
 } else {
   loadTripDetails();
 }
+});
+
+// Add this at the beginning of your DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', async () => {
+  // Add back button to the page
+  const header = document.querySelector('header') || document.body.firstChild;
+  const backButton = document.createElement('button');
+  backButton.className = 'back-button';
+  backButton.innerHTML = '<i class="fas fa-arrow-left"></i> Back';
+  backButton.addEventListener('click', () => {
+    window.history.back();
+  });
+  header.insertAdjacentElement('afterbegin', backButton);
+
 });
           
           

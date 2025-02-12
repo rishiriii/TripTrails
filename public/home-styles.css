@@ -47,7 +47,7 @@
   
   /* Buttons */
   .primary-btn {
-    background: #2563eb;
+    background: #6b48ff;
     color: white;
     padding: 15px 30px;
     border: none;
@@ -74,7 +74,7 @@
   
   .secondary-btn:hover {
     background: white;
-    color: #2563eb;
+    color: #6b48ff;
   }
   
   /* Features Section */
@@ -159,7 +159,7 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    background: rgba(37, 99, 235, 0.9);
+    background: #6b48ff;
     color: white;
     padding: 5px 10px;
     border-radius: 20px;
@@ -259,7 +259,7 @@
   
   /* CTA Section */
   .cta {
-    background: #2563eb;
+    background: #6b48ff;
     color: white;
     padding: 80px 20px;
     text-align: center;

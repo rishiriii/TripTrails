@@ -1,121 +1,181 @@
 import { auth } from '../firebase.js';
 import { 
   signInWithEmailAndPassword, 
+  sendPasswordResetEmail, 
   signInWithPopup, 
-  GoogleAuthProvider,
-  sendPasswordResetEmail,
-  setPersistence,
-  browserLocalPersistence
+  GoogleAuthProvider 
 } from 'firebase/auth';
 
-// Set persistence when the page loads
-setPersistence(auth, browserLocalPersistence)
-  .catch(error => {
-    console.error('Error setting persistence:', error);
-  });
+class PopupManager {
+  static show(message, type = 'success') {
+    // Remove any existing popups
+    const existingPopup = document.querySelector('.popup');
+    if (existingPopup) existingPopup.remove();
 
-// Check if user is already logged in
-auth.onAuthStateChanged((user) => {
-  if (user && window.location.pathname.includes('login.html')) {
-    window.location.href = 'home.html';
-  }
-});
+    const popup = document.createElement('div');
+    popup.className = `popup ${type}`;
+    popup.innerHTML = `
+      ${message}
+      <div class="popup-progress">
+        <div class="popup-progress-bar"></div>
+      </div>
+    `;
 
-// Email/Password Login
-document.getElementById('login-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
+    document.body.appendChild(popup);
 
-  const email = document.getElementById('login-email').value;
-  const password = document.getElementById('login-password').value;
-  const errorElement = document.getElementById('login-error') || document.createElement('div');
+    // Auto-remove after 5 seconds
+    const autoRemove = setTimeout(() => {
+      popup.remove();
+    }, 5000);
 
-  if (!email || !password) {
-    errorElement.textContent = 'Please fill in all fields';
-    return;
-  }
-
-  try {
-    // Show loading state if you have one
-    const button = event.target.querySelector('button[type="submit"]');
-    if (button) button.disabled = true;
-
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    console.log('User logged in:', userCredential.user);
-    
-    // Redirect after successful login
-    window.location.href = 'home.html';
-  } catch (error) {
-    console.error('Error logging in:', error);
-    errorElement.textContent = getErrorMessage(error.code);
-    event.target.appendChild(errorElement);
-  } finally {
-    // Reset loading state
-    const button = event.target.querySelector('button[type="submit"]');
-    if (button) button.disabled = false;
-  }
-});
-
-// Google Sign-In
-document.getElementById('google-login').addEventListener('click', async () => {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({
-    prompt: 'select_account' // Forces account selection even if already logged in
-  });
-
-  try {
-    const result = await signInWithPopup(auth, provider);
-    console.log('Google user logged in:', result.user);
-    window.location.href = 'home.html';
-  } catch (error) {
-    console.error('Error logging in with Google:', error);
-    const errorElement = document.getElementById('login-error') || document.createElement('div');
-    errorElement.textContent = getErrorMessage(error.code);
-    document.getElementById('login-form').appendChild(errorElement);
-  }
-});
-
-// Forgot Password
-document.getElementById('forgot-password').addEventListener('click', async (event) => {
-  event.preventDefault();
-  
-  const email = document.getElementById('login-email').value;
-  
-  if (!email) {
-    alert('Please enter your email address in the email field');
-    return;
-  }
-
-  try {
-    await sendPasswordResetEmail(auth, email);
-    alert('Password reset email sent! Please check your inbox.');
-  } catch (error) {
-    console.error('Error sending password reset email:', error);
-    const errorElement = document.getElementById('login-error') || document.createElement('div');
-    errorElement.textContent = getErrorMessage(error.code);
-    document.getElementById('login-form').appendChild(errorElement);
-  }
-});
-
-// Helper function to get user-friendly error messages
-function getErrorMessage(errorCode) {
-  switch (errorCode) {
-    case 'auth/user-not-found':
-      return 'No account found with this email address';
-    case 'auth/wrong-password':
-      return 'Incorrect password';
-    case 'auth/invalid-email':
-      return 'Invalid email address';
-    case 'auth/user-disabled':
-      return 'This account has been disabled';
-    case 'auth/too-many-requests':
-      return 'Too many failed attempts. Please try again later';
-    case 'auth/popup-closed-by-user':
-      return 'Login popup was closed before completion';
-    case 'auth/cancelled-popup-request':
-      return 'Another popup is already open';
-    case 'auth/popup-blocked':
-      return 'Login popup was blocked by the browser';
-    default:
-      return 'An error occurred during login. Please try again';
+    // Remove popup if clicked before timeout
+    popup.addEventListener('click', () => {
+      clearTimeout(autoRemove);
+      popup.remove();
+    });
   }
 }
+
+class LoginManager {
+  constructor() {
+    this.loginForm = document.getElementById('login-form');
+    this.emailInput = document.getElementById('email');
+    this.passwordInput = document.getElementById('password');
+    this.forgotPasswordLink = document.querySelector('.forgot-password');
+    this.googleLoginButton = document.getElementById('google-login');
+
+    this.initEventListeners();
+  }
+
+  initEventListeners() {
+    this.loginForm.addEventListener('submit', this.handleLogin.bind(this));
+    this.forgotPasswordLink.addEventListener('click', this.handleForgotPassword.bind(this));
+    this.googleLoginButton.addEventListener('click', this.handleGoogleLogin.bind(this));
+  }
+
+  validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  async handleLogin(e) {
+    e.preventDefault();
+    const email = this.emailInput.value.trim();
+    const password = this.passwordInput.value;
+
+    if (!email || !password) {
+      PopupManager.show('Please enter both email and password', 'error');
+      return;
+    }
+
+    if (!this.validateEmail(email)) {
+      PopupManager.show('Please enter a valid email address', 'error');
+      return;
+    }
+
+    try {
+      const loginButton = this.loginForm.querySelector('button[type="submit"]');
+      loginButton.disabled = true;
+      loginButton.innerHTML = '<div class="loader"></div>';
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      PopupManager.show('Login Successful!');
+      
+      setTimeout(() => {
+        window.location.href = 'home.html';
+      }, 1500);
+    } catch (error) {
+      let errorMessage = 'Failed to log in. Please try again.';
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email address';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many failed attempts. Please try again later';
+          break;
+      }
+      
+      PopupManager.show(errorMessage, 'error');
+    } finally {
+      const loginButton = this.loginForm.querySelector('button[type="submit"]');
+      loginButton.disabled = false;
+      loginButton.innerHTML = 'Log In';
+    }
+  }
+
+  async handleForgotPassword(e) {
+    e.preventDefault();
+    const email = this.emailInput.value.trim();
+
+    if (!email) {
+      PopupManager.show('Please enter your email address', 'error');
+      return;
+    }
+
+    if (!this.validateEmail(email)) {
+      PopupManager.show('Please enter a valid email address', 'error');
+      return;
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      PopupManager.show('Password reset email sent!');
+    } catch (error) {
+      let errorMessage = 'Failed to send password reset email';
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email address';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email address';
+          break;
+      }
+      
+      PopupManager.show(errorMessage, 'error');
+    }
+  }
+
+  async handleGoogleLogin(e) {
+    e.preventDefault();
+    
+    try {
+      this.googleLoginButton.disabled = true;
+      this.googleLoginButton.innerHTML = '<div class="loader"></div>';
+
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+
+      const result = await signInWithPopup(auth, provider);
+      PopupManager.show('Google Login Successful!');
+      
+      setTimeout(() => {
+        window.location.href = 'home.html';
+      }, 1500);
+    } catch (error) {
+      let errorMessage = 'Failed to log in with Google';
+      switch (error.code) {
+        case 'auth/popup-closed-by-user':
+          errorMessage = 'Login popup was closed';
+          break;
+        case 'auth/popup-blocked':
+          errorMessage = 'Login popup was blocked by browser';
+          break;
+      }
+      
+      PopupManager.show(errorMessage, 'error');
+    } finally {
+      this.googleLoginButton.disabled = false;
+      this.googleLoginButton.innerHTML = 'Continue with Google';
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  new LoginManager();
+});

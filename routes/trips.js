@@ -295,14 +295,22 @@ tripsRouter.post('/:id/views', async (req, res) => {
       const tripRef = db.collection('trips').doc(tripId);
       const likesRef = tripRef.collection('likes');
       
-      await likesRef.doc(userId).set({
-        timestamp: new Date()
+      await db.runTransaction(async (transaction) => {
+        const userLikeDoc = await transaction.get(likesRef.doc(userId));
+        if (userLikeDoc.exists) {
+          throw new Error('User already liked this trip');
+        }
+  
+        transaction.set(likesRef.doc(userId), { timestamp: new Date() });
+        transaction.update(tripRef, { 
+          likes: admin.firestore.FieldValue.increment(1) 
+        });
       });
   
-      const likesSnapshot = await likesRef.get();
+      const updatedTripDoc = await tripRef.get();
       
       res.json({
-        totalLikes: likesSnapshot.size,
+        totalLikes: updatedTripDoc.data().likes,
         isLikedByUser: true
       });
     } catch (error) {
@@ -320,12 +328,22 @@ tripsRouter.post('/:id/views', async (req, res) => {
       const tripRef = db.collection('trips').doc(tripId);
       const likesRef = tripRef.collection('likes');
       
-      await likesRef.doc(userId).delete();
+      await db.runTransaction(async (transaction) => {
+        const userLikeDoc = await transaction.get(likesRef.doc(userId));
+        if (!userLikeDoc.exists) {
+          throw new Error('User has not liked this trip');
+        }
   
-      const likesSnapshot = await likesRef.get();
+        transaction.delete(likesRef.doc(userId));
+        transaction.update(tripRef, { 
+          likes: admin.firestore.FieldValue.increment(-1) 
+        });
+      });
+  
+      const updatedTripDoc = await tripRef.get();
       
       res.json({
-        totalLikes: likesSnapshot.size,
+        totalLikes: updatedTripDoc.data().likes,
         isLikedByUser: false
       });
     } catch (error) {

@@ -322,6 +322,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       resolve();
     });
   });
+  function updatePerPersonExpense() {
+    const totalExpense = parseFloat(document.getElementById('expense').value) || 0;
+    const numberOfPeople = parseInt(document.getElementById('numberOfPeople').value) || 1;
+    const perPerson = (totalExpense / numberOfPeople).toFixed(2);
+    document.getElementById('perPersonExpense').textContent = `$${perPerson}`;
+  }
+  
+
   
   // Initialize autocomplete for start and end locations
   initializeAutocomplete('start-location');
@@ -329,4 +337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Add stop button handler
   document.getElementById('add-stop-btn').addEventListener('click', addStop);
+
+  document.getElementById('expense').addEventListener('input', updatePerPersonExpense);
+  document.getElementById('numberOfPeople').addEventListener('input', updatePerPersonExpense);
 });

@@ -28,7 +28,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes - these should come BEFORE the fallback route
 app.use('/trips', tripsRouter);
-app.use('/api/users', userRouter);
+app.use('/users', userRouter);
 
 // Serve index.html for all non-API routes
 app.get('*', (req, res) => {

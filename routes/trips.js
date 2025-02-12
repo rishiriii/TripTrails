@@ -79,8 +79,11 @@ tripsRouter.post('/', async (req, res) => {
     const tripData = req.body;
     console.log('Received new trip data:', tripData);
 
-    // Validate trip data
-    const requiredFields = ['title', 'start', 'end', 'days', 'nights', 'expense', 'description', 'bannerPhoto'];
+    // Validate trip data - add numberOfPeople to required fields
+    const requiredFields = [
+      'title', 'start', 'end', 'days', 'nights', 
+      'expense', 'description', 'bannerPhoto', 'numberOfPeople'
+    ];
     const missingFields = requiredFields.filter(field => !tripData[field]);
     
     if (missingFields.length > 0) {
@@ -91,6 +94,22 @@ tripsRouter.post('/', async (req, res) => {
       });
     }
 
+    // Validate numberOfPeople and expense
+    const numberOfPeople = parseInt(tripData.numberOfPeople);
+    const totalExpense = parseFloat(tripData.expense);
+
+    if (numberOfPeople < 1) {
+      return res.status(400).json({
+        message: 'Number of people must be at least 1'
+      });
+    }
+
+    if (totalExpense < 0) {
+      return res.status(400).json({
+        message: 'Expense cannot be negative'
+      });
+    }
+
     const tripsRef = db.collection('trips');
     
     const processedTripData = {
@@ -98,7 +117,10 @@ tripsRouter.post('/', async (req, res) => {
       start: tripData.start.toLowerCase(),
       end: tripData.end.toLowerCase(),
       originalStart: tripData.start, 
-      originalEnd: tripData.end,     
+      originalEnd: tripData.end,
+      numberOfPeople: numberOfPeople,
+      expense: totalExpense,
+      perPersonExpense: parseFloat((totalExpense / numberOfPeople).toFixed(2)),
       userId: req.user.uid,
       createdAt: Date.now(),
       views: 0,
@@ -117,7 +139,6 @@ tripsRouter.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error adding trip:', error);
-    // Send a properly formatted JSON response
     return res.status(500).json({ 
       message: 'Error adding trip', 
       error: error.message 
@@ -148,6 +169,7 @@ tripsRouter.get('/', async (req, res) => {
 });
 
 // Get trip details by ID
+// Get trip details by ID
 tripsRouter.get('/:id', async (req, res) => {
   const tripId = req.params.id;
 
@@ -161,6 +183,13 @@ tripsRouter.get('/:id', async (req, res) => {
 
     const tripData = tripDoc.data();
     
+    // Process numeric fields
+    const processedTripData = {
+      ...tripData,
+      numberOfPeople: parseInt(tripData.numberOfPeople) || 1,
+      expense: parseFloat(tripData.expense) || 0,
+      perPersonExpense: parseFloat((tripData.expense / (parseInt(tripData.numberOfPeople) || 1)).toFixed(2))
+    };
     
     const userProfilesRef = db.collection('userProfiles');
     const userQuery = userProfilesRef.where('uid', '==', tripData.userId); 
@@ -173,7 +202,7 @@ tripsRouter.get('/:id', async (req, res) => {
 
     res.json({
       id: tripDoc.id,
-      ...tripData,
+      ...processedTripData,
       authorUsername: userData.username,
       authorDisplayName: userData.displayName
     });

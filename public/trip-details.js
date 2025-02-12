@@ -226,14 +226,40 @@ async function loadTripDetails() {
         .join(' ');
     };
 
+    // Format currency
+    const formatCurrency = (amount) => {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(amount || 0);
+    };
+
     // Populate trip details
     document.getElementById('trip-title').textContent = trip.title || 'No Title';
     document.getElementById('trip-start-end').textContent = 
       `${formatLocation(trip.start) || 'Unknown'} to ${formatLocation(trip.end) || 'Unknown'}`;
     document.getElementById('trip-days').textContent = 
       `${trip.days || 0} Days / ${trip.nights || 0} Nights`;
-    document.getElementById('trip-expense').textContent = 
-      `$${trip.expense || 0}`;
+    
+    // Updated expense section to include number of people and per-person expense
+    const expenseSection = document.getElementById('trip-expense');
+    expenseSection.innerHTML = `
+      <div class="expense-details">
+        <div class="expense-item">
+          <span class="expense-label">Total Expense:</span>
+          <span class="expense-value">${formatCurrency(trip.expense)}</span>
+        </div>
+        <div class="expense-item">
+          <span class="expense-label">Number of People:</span>
+          <span class="expense-value">${trip.numberOfPeople || 1}</span>
+        </div>
+        <div class="expense-item highlight">
+          <span class="expense-label">Per Person:</span>
+          <span class="expense-value">${formatCurrency(trip.perPersonExpense)}</span>
+        </div>
+      </div>
+    `;
+    
     document.getElementById('trip-description').textContent = 
       trip.description || 'No description available';
     document.getElementById('trip-username').textContent = 
@@ -273,6 +299,7 @@ async function loadTripDetails() {
     await incrementViews();
     await loadLikeState();
     await displayNearbyAttractions(trip.end);
+    await displayNearbyHotels(trip.end);
     
     // Add like button event listener
     document.getElementById('likeButton').addEventListener('click', handleLike);
@@ -734,6 +761,221 @@ async function displayNearbyAttractions(location) {
           <p>Unable to load attractions: ${error.message}</p>
           <p>You can still explore the area on 
             <a href="https://www.google.com/maps/search/attractions+in+${encodeURIComponent(location)}" 
+               target="_blank" rel="noopener noreferrer">Google Maps</a>
+          </p>
+        </div>
+      `;
+    }
+  }
+}
+
+async function fetchNearbyHotels(location) {
+  try {
+    await waitForGoogleMaps();
+
+    const mapDiv = document.createElement('div');
+    mapDiv.style.display = 'none';
+    document.body.appendChild(mapDiv);
+
+    const map = new google.maps.Map(mapDiv, {
+      center: { lat: 0, lng: 0 },
+      zoom: 1
+    });
+
+    const service = new google.maps.places.PlacesService(map);
+    const geocoder = new google.maps.Geocoder();
+
+    const geocodeResult = await new Promise((resolve, reject) => {
+      geocoder.geocode({ address: location }, (results, status) => {
+        if (status === 'OK') {
+          resolve(results[0].geometry.location);
+        } else {
+          reject(new Error(`Geocoding failed: ${status}`));
+        }
+      });
+    });
+
+    const locationLatLng = {
+      lat: geocodeResult.lat(),
+      lng: geocodeResult.lng()
+    };
+
+    // Search for hotels within 25km radius
+    const request = {
+      location: locationLatLng,
+      radius: 25000, // 25km in meters
+      type: 'lodging',
+      language: 'en'
+    };
+
+    const results = await new Promise((resolve, reject) => {
+      service.nearbySearch(request, (results, status) => {
+        if (status === 'OK') {
+          resolve(results);
+        } else if (status === 'ZERO_RESULTS') {
+          resolve([]);
+        } else {
+          reject(new Error(`Hotel search failed: ${status}`));
+        }
+      });
+    });
+
+    document.body.removeChild(mapDiv);
+
+    // Filter and sort hotels
+    const sortedHotels = results
+      .filter(hotel => {
+        // Filter out places that aren't actually hotels
+        const types = hotel.types.map(t => t.toLowerCase());
+        return types.includes('lodging') && 
+               !types.includes('rv_park') && 
+               !types.includes('campground');
+      })
+      .sort((a, b) => {
+        // Sort by rating and number of reviews
+        const ratingDiff = (b.rating || 0) - (a.rating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        return (b.user_ratings_total || 0) - (a.user_ratings_total || 0);
+      })
+      .slice(0, 15); // Limit to top 15 hotels
+
+    return sortedHotels;
+
+  } catch (error) {
+    console.error('Error in fetchNearbyHotels:', error);
+    throw error;
+  }
+}
+
+function createHotelCard(hotel) {
+  const card = document.createElement('div');
+  card.className = 'hotel-card';
+  
+  // Default image path
+  const defaultImagePath = '/images/placeholder-hotel.jpg';
+  
+  // Get hotel photo URL
+  let photoUrl = defaultImagePath;
+  try {
+    if (hotel.photos && hotel.photos.length > 0) {
+      photoUrl = hotel.photos[0].getUrl({
+        maxWidth: 400,
+        maxHeight: 300
+      });
+    }
+  } catch (error) {
+    console.warn('Failed to get hotel photo:', error);
+  }
+
+  const ratingStars = hotel.rating 
+    ? '★'.repeat(Math.floor(hotel.rating)) + '☆'.repeat(5 - Math.floor(hotel.rating))
+    : '';
+
+  // Calculate price level display
+  const priceLevel = hotel.price_level 
+    ? '💰'.repeat(hotel.price_level)
+    : 'Price not available';
+
+  card.innerHTML = `
+    <div class="hotel-image-container">
+      <img 
+        src="${photoUrl}" 
+        alt="${hotel.name}"
+        class="hotel-image"
+        onerror="this.onerror=null; this.src='${defaultImagePath}'"
+      >
+      ${hotel.rating ? `
+        <div class="rating-badge">
+          <span class="rating-number">${hotel.rating.toFixed(1)}</span>
+          <span class="rating-star">★</span>
+        </div>
+      ` : ''}
+    </div>
+    <div class="hotel-details">
+      <h3>${hotel.name}</h3>
+      <div class="price-level">${priceLevel}</div>
+      <div class="rating">
+        ${hotel.rating ? `
+          <span class="stars">${ratingStars}</span>
+          <span class="rating-text">(${hotel.user_ratings_total || 0} reviews)</span>
+        ` : '<span class="no-rating">No ratings yet</span>'}
+      </div>
+      ${hotel.vicinity ? `<p class="vicinity">${hotel.vicinity}</p>` : ''}
+    </div>
+  `;
+
+  // Add click handler to open in Google Maps
+  card.addEventListener('click', () => {
+    const mapsUrl = `https://www.google.com/maps/place/?q=place_id:${hotel.place_id}`;
+    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+  });
+
+  return card;
+}
+
+async function displayNearbyHotels(location) {
+  if (!location) {
+    console.error('No location provided to displayNearbyHotels');
+    return;
+  }
+
+  try {
+    // Create hotels section
+    let hotelsSection = document.querySelector('.hotels-section');
+    if (!hotelsSection) {
+      hotelsSection = document.createElement('div');
+      hotelsSection.className = 'hotels-section';
+      const attractionsSection = document.querySelector('.attractions-section');
+      if (attractionsSection) {
+        attractionsSection.insertAdjacentElement('afterend', hotelsSection);
+      }
+    }
+
+    // Show loading state
+    hotelsSection.innerHTML = `
+      <h2>Best Hotels Nearby</h2>
+      <p class="section-subtitle">Within 25km radius</p>
+      <div class="hotels-container">
+        <div class="hotels-scroll">
+          <div class="loading-spinner">Loading hotels...</div>
+        </div>
+      </div>
+    `;
+
+    // Fetch hotels
+    const hotels = await fetchNearbyHotels(location);
+    const scrollContainer = hotelsSection.querySelector('.hotels-scroll');
+
+    if (!hotels || hotels.length === 0) {
+      scrollContainer.innerHTML = `
+        <div class="no-hotels">
+          <p>No hotels found in this area.</p>
+          <p>You can still search for accommodations on 
+            <a href="https://www.google.com/maps/search/hotels+in+${encodeURIComponent(location)}" 
+               target="_blank" rel="noopener noreferrer">Google Maps</a>
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    // Display hotels
+    scrollContainer.innerHTML = '';
+    hotels.forEach(hotel => {
+      const card = createHotelCard(hotel);
+      scrollContainer.appendChild(card);
+    });
+
+  } catch (error) {
+    console.error('Error in displayNearbyHotels:', error);
+    const hotelsSection = document.querySelector('.hotels-section');
+    if (hotelsSection) {
+      hotelsSection.innerHTML = `
+        <h2>Best Hotels Nearby</h2>
+        <div class="error-message">
+          <p>Unable to load hotels: ${error.message}</p>
+          <p>You can still search for accommodations on 
+            <a href="https://www.google.com/maps/search/hotels+in+${encodeURIComponent(location)}" 
                target="_blank" rel="noopener noreferrer">Google Maps</a>
           </p>
         </div>

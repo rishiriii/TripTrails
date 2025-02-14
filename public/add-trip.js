@@ -262,6 +262,7 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
       endDate,
       days,
       nights,
+      numberOfPeople,
       expense: parseFloat(formData.get('expense')) || 0,
       description: formData.get('description'),
       visibility: formData.get('visibility'),

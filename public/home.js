@@ -7,16 +7,14 @@ const WEATHER_API_KEY = '215f465dceb641daa0e75031251801';
 
 async function getAuthToken() {
   try {
-    // Wait for auth initialization
     await new Promise((resolve) => {
       const unsubscribe = auth.onAuthStateChanged((user) => {
-        unsubscribe(); // Unsubscribe after first state change
+        unsubscribe();
         resolve(user);
       });
     });
-
-    const user = auth.currentUser;
     
+    const user = auth.currentUser;
     return user.getIdToken();
   } catch (error) {
     console.error('Error getting auth token:', error);
@@ -33,7 +31,6 @@ async function getWeatherData(city) {
     return {
       temp: data.current.temp_c,
       condition: data.current.condition.text,
-      
     };
   } catch (error) {
     console.error('Weather fetch error:', error);
@@ -43,7 +40,6 @@ async function getWeatherData(city) {
 
 async function fetchTopDestinations() {
   try {
-    // Query Firestore for top 5 destinations
     const q = query(
       collection(db, 'destinations'),
       orderBy('tripCount', 'desc'),
@@ -81,7 +77,7 @@ function displayTopDestinations(destinations) {
 
   container.innerHTML = destinations
     .map((dest, index) => `
-      <div class="destination-card ${index < 3 ? 'top-three' : ''}" 
+      <div class="destination-card animate-on-scroll ${index < 3 ? 'top-three' : ''}" 
            onclick="window.location.href='/explore.html?destination=${encodeURIComponent(dest.name)}'">
         <div class="rank">#${index + 1}</div>
         <h3>${dest.name}</h3>
@@ -97,7 +93,67 @@ function displayTopDestinations(destinations) {
         ` : ''}
       </div>
     `).join('');
+
+  // Trigger animation check after adding new elements
+  animateOnScroll();
 }
 
-// Initialize once when page loads
-document.addEventListener('DOMContentLoaded', fetchTopDestinations);
+// Smooth scrolling for navigation links
+document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+  anchor.addEventListener("click", function (e) {
+    e.preventDefault();
+    const targetId = this.getAttribute("href");
+    const targetElement = document.querySelector(targetId);
+    if (targetElement) {
+      targetElement.scrollIntoView({
+        behavior: "smooth"
+      });
+    }
+  });
+});
+
+// Mobile menu functionality
+function initializeMobileMenu() {
+  const menuToggle = document.querySelector(".menu-toggle");
+  const navLinks = document.querySelector(".nav-links");
+  
+  if (menuToggle && navLinks) {
+    menuToggle.addEventListener("click", () => {
+      menuToggle.classList.toggle("active");
+      navLinks.classList.toggle("active");
+    });
+  }
+}
+
+// Scroll animations
+function animateOnScroll() {
+  const elements = document.querySelectorAll(".animate-on-scroll");
+  elements.forEach((el) => {
+    const rect = el.getBoundingClientRect();
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    if (rect.top <= windowHeight * 0.75) {
+      el.classList.add("in-view");
+    }
+  });
+}
+
+// Combined scroll handler
+function handleScroll() {
+  const header = document.querySelector('.header');
+  if (window.scrollY > 50) {
+    header.classList.add('scrolled');
+  } else {
+    header.classList.remove('scrolled');
+  }
+  animateOnScroll();
+}
+
+// Initialize everything when the DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  fetchTopDestinations();
+  initializeMobileMenu();
+  animateOnScroll();
+});
+
+// Add scroll event listener
+window.addEventListener('scroll', handleScroll);

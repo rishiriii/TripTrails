@@ -1,110 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TripTrails - Share Your Journey</title>
-
-  <link rel="stylesheet" href="home-styles.css">
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripTrails - Customize Your Adventure</title>
+    <link rel="stylesheet" href="home-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
 </head>
 <body>
-  <header>
-    <nav class="navbar">
-      <a href="/home.html" class="navbar-brand">TripTrails</a>
-      
-      <div class="navbar-center">
-        <a href="/home.html" class="nav-link active">Home</a>
-        <a href="/explore.html" class="nav-link">Explore</a>
-        <a href="/about.html" class="nav-link">About Us</a>
-        <a href="/contact.html" class="nav-link">Contact Us</a>
-        <button onclick="window.location.href='add-trip.html'" class="add-trip-btn">Add Trip</button>
-      </div>
-      
-      <div class="navbar-right">
-        
-        <div id="profile-container" class="profile-container">
-          <!-- Profile dropdown content -->
+    <header class="header">
+        <div class="container">
+            <a href="#" class="logo">TripTrails</a>
+            <nav class="nav-links">
+                <a href="#" class="nav-link active">Home</a>
+                <a href="/explore.html" class="nav-link">Explore</a>
+                <a href="#" class="nav-link">About Us</a>
+                <a href="#" class="nav-link">Contact Us</a>
+                
+            </nav>
+            <div id="profile-container"></div>
+            <button class="menu-toggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
-      </div>
-    </nav>
-  </header>
+    </header>
 
-  <main>
-    <!-- Hero Section -->
-    <section class="hero">
-      <div class="hero-content">
-        <h1>Share Your Journey</h1>
-        <p>Document and share your travel experiences with fellow adventurers</p>
-        <div class="hero-buttons">
-          <button onclick="window.location.href='explore.html'" class="primary-btn">Explore Trips</button>
-          <button onclick="window.location.href='add-trip.html'" class="secondary-btn">Share Your Trip</button>
-        </div>
-      </div>
-    </section>
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1 class="animate-on-scroll">Customize Your Adventure</h1>
+                <p class="animate-on-scroll">Craft your personalized journey through destinations that allow, where every step is tailored to your unique travel desires.</p>
+                <a href="#" class="button animate-on-scroll">Plan Your Trip</a>
+            </div>
+        </section>
 
-    <!-- Features Section -->
-    <section class="features">
-      <h2>Why Choose TripTrails?</h2>
-      <div class="features-grid">
-        <div class="feature-card">
-          <div class="feature-icon">📍</div>
-          <h3>Track Your Routes</h3>
-          <p>Create detailed routes with multiple stops and share your exact journey</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">📸</div>
-          <h3>Photo Stories</h3>
-          <p>Upload and organize photos from each stop to tell your travel story</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🤝</div>
-          <h3>Connect</h3>
-          <p>Join a community of travelers and share experiences</p>
-        </div>
-      </div>
-      <div class="content">
-        <div class="top-destinations">
-          <h2>Popular Destinations</h2>
-          <div class="destinations-grid" id="top-destinations">
-            <!-- Will be populated by JavaScript -->
-          </div>
-        </div>
-      </div>
-    </section>
+        <section class="gallery">
+            <div class="container">
+                <div class="gallery-grid">
+                    <div class="gallery-item animate-on-scroll">
+                        <img src="https://source.unsplash.com/random/400x300?travel" alt="Travel destination 1" loading="lazy">
+                    </div>
+                    <div class="gallery-item animate-on-scroll">
+                        <img src="https://source.unsplash.com/random/400x300?landscape" alt="Travel destination 2" loading="lazy">
+                    </div>
+                    <div class="gallery-item animate-on-scroll">
+                        <img src="https://source.unsplash.com/random/400x300?city" alt="Travel destination 3" loading="lazy">
+                    </div>
+                    <div class="gallery-item animate-on-scroll">
+                        <img src="https://farm7.staticflickr.com/6042/7012519385_f7e92b8d8e_z.jpg" alt="Travel destination 4" loading="lazy">
+                    </div>
+                </div>
+            </div>
+        </section>
 
-   
+        <section class="features">
+            <div class="container">
+                <h2 class="animate-on-scroll">Craft Custom Trips Across India</h2>
+                <p class="animate-on-scroll">Explore personalized itineraries from passionate travelers and experts, sharing hidden gems and unique experiences throughout India.</p>
+                
+                <div class="features-grid">
+                    <div class="feature-card animate-on-scroll">
+                        <i class="fas fa-route"></i>
+                        <h3>Access Expert Trip Guidance</h3>
+                        <p>Plan your personalized travel with our expert itinerary templates.</p>
+                    </div>
+                    <div class="feature-card animate-on-scroll">
+                        <i class="fas fa-users"></i>
+                        <h3>Collaborative Trip Planning Tools</h3>
+                        <p>Work with fellow travelers on tools built for seamless planning.</p>
+                    </div>
+                    <div class="feature-card animate-on-scroll">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <h3>Interactive Map Integrations</h3>
+                        <p>Visualize your journey with our interactive mapping tools.</p>
+                    </div>
+                    <div class="feature-card animate-on-scroll">
+                        <i class="fas fa-compass"></i>
+                        <h3>Local Experience Recommendations</h3>
+                        <p>Discover hidden local gems from our expert community.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-  <footer>
-    <div class="footer-content">
-      <div class="footer-section">
-        <h4>TripTrails</h4>
-        <p>Share your journey, inspire others</p>
-      </div>
-      <div class="footer-section">
-        <h4>Quick Links</h4>
-        <a href="/explore.html">Explore</a>
-        <a href="/about.html">About Us</a>
-        <a href="/contact.html">Contact</a>
-       
-      </div>
-      <div class="footer-section">
-        <h4>Connect</h4>
-        <div class="social-links">
-          <a href="#">Twitter</a>
-          <a href="#">Instagram</a>
-          <a href="#">Facebook</a>
+        <section class="testimonials">
+            <div class="container">
+                <h2 class="animate-on-scroll">Traveler Voices: Authentic Reviews</h2>
+                <div class="testimonials-grid">
+                    <div class="testimonial-card animate-on-scroll">
+                        <p>"TripTrails has transformed how I plan my travels. The ease of sharing experiences and connecting with others makes every journey exciting!"</p>
+                        <p class="author">- Ray Brown</p>
+                    </div>
+                    <div class="testimonial-card animate-on-scroll">
+                        <p>"Using TripTrails has made my travel planning more free and enjoyable. I've discovered so many hidden gems I would have otherwise missed!"</p>
+                        <p class="author">- Sarah Chen</p>
+                    </div>
+                    <div class="testimonial-card animate-on-scroll">
+                        <p>"TripTrails revolutionized my travel experience! The platform is easy to navigate and makes planning a breeze."</p>
+                        <p class="author">- Alex Kim</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta">
+            <div class="container">
+                <div class="cta-content animate-on-scroll">
+                    <h2>Plan Your Perfect Getaway</h2>
+                    <p>Start crafting your dream journey today</p>
+                    <a href="#" class="button">Get Started Now</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="destinations">
+            <div class="container">
+                <h2 class="animate-on-scroll">Popular Destinations</h2>
+                <div class="destinations-grid" id="top-destinations">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 TripTrails. All rights reserved.</p>
         </div>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>&copy; 2024 TripTrails. All rights reserved.</p>
-    </div>
-   
-  </footer>
+    </footer>
 
-  <script type="module" src="home.js"></script>
-  <script type="module" src="profile-dropdown.js"></script>
-  <script type="module" src="auth-guard.js"></script>
+
+    <script type="module" src="home.js"></script>
+    <script type="module" src="profile-dropdown.js"></script>
+    <script type="module" src="auth-guard.js"></script>
 </body>
 </html>

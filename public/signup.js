@@ -24,8 +24,10 @@ function showError(message) {
   errorDiv.className = 'error-message';
   errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
   
-  const container = document.querySelector('.form-container');
-  container.insertBefore(errorDiv, container.querySelector('.login-link'));
+  // Change this line to use signup-container instead of form-container
+  const container = document.querySelector('.signup-container');
+  const loginLink = container.querySelector('.login-link');
+  container.insertBefore(errorDiv, loginLink);
   
   setTimeout(() => {
     errorDiv.remove();

@@ -298,4 +298,51 @@ document.addEventListener('DOMContentLoaded', () => {
   endLocation.addEventListener('input', debounceSearch);
 });
 
+// Add this to your explore.js file
+document.addEventListener('DOMContentLoaded', () => {
+  const expenseSlider = document.getElementById('expense-slider');
+  const expenseValue = document.getElementById('expense-value');
+  const expenseInput = document.querySelector('.expense-input');
+
+  // Create and insert progress bar element
+  const rangeProgress = document.createElement('div');
+  rangeProgress.className = 'range-progress';
+  expenseSlider.parentElement.appendChild(rangeProgress);
+
+  function updateSliderProgress(value) {
+    const min = parseInt(expenseSlider.min) || 0;
+    const max = parseInt(expenseSlider.max) || 10000;
+    const percentage = ((value - min) / (max - min)) * 100;
+    
+    // Update progress bar width and position
+    rangeProgress.style.width = `${percentage}%`;
+    rangeProgress.style.left = '0';
+  }
+
+  if (expenseSlider) {
+    // Initial update
+    updateSliderProgress(expenseSlider.value);
+
+    // Update on slider input
+    expenseSlider.addEventListener('input', (e) => {
+      const value = parseInt(e.target.value);
+      updateSliderProgress(value);
+      expenseValue.textContent = `$${value.toLocaleString()}`;
+      expenseInput.value = value;
+    });
+
+    // Update on text input
+    expenseInput.addEventListener('input', (e) => {
+      let value = parseInt(e.target.value);
+      if (isNaN(value)) value = 0;
+      if (value > parseInt(expenseSlider.max)) value = parseInt(expenseSlider.max);
+      if (value < parseInt(expenseSlider.min)) value = parseInt(expenseSlider.min);
+      
+      expenseSlider.value = value;
+      updateSliderProgress(value);
+      expenseValue.textContent = `$${value.toLocaleString()}`;
+    });
+  }
+});
+
 export { searchTrips };

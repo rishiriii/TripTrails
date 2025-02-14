@@ -1,8 +1,10 @@
-// profile-dropdown.js - Update the dropdown menu to use modal
+// Import the showEditProfileModal function
+import { showEditProfileModal } from './edit-profile.js';
+
+// Import required Firebase functions
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { showEditProfileModal } from './edit-profile.js'; // Import the modal function
 
 async function getUserProfile(uid) {
   const userProfileRef = collection(db, 'userProfiles');
@@ -15,54 +17,58 @@ async function getUserProfile(uid) {
   return null;
 }
 
-async function createProfileDropdown(user) {
-  const container = document.getElementById('profile-container');
-  if (!container) return;
+function createProfileDropdown(user, userProfile) {
+  const profileContainer = document.getElementById('profile-container');
+  if (!profileContainer) return;
 
-  const userProfile = await getUserProfile(user.uid);
   const displayName = userProfile?.username || user.email.split('@')[0];
 
-  const button = document.createElement('button');
-  button.className = 'profile-button';
-  button.innerHTML = `
-    <span>${displayName}</span>
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-      <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-    </svg>
+  profileContainer.innerHTML = `
+    <div class="profile-dropdown">
+      <button class="profile-btn">
+        <span>${displayName}</span>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div class="dropdown-content">
+        <a href="#" class="dropdown-item" id="edit-profile-btn">
+          <i class="fas fa-user"></i> My Profile
+        </a>
+        <a href="/my-trips.html" class="dropdown-item">
+          <i class="fas fa-map-marked-alt"></i> My Trips
+        </a>
+        <a href="#" class="dropdown-item" id="logout-btn">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+      </div>
+    </div>
   `;
 
-  const dropdown = document.createElement('div');
-  dropdown.className = 'profile-dropdown';
-  dropdown.innerHTML = `
-    
-    <a href="#" class="dropdown-item" id="edit-profile-btn">Edit Profile</a>
-    <a href="/my-trips.html" class="dropdown-item">My Trips</a>
-    <a href="#" class="dropdown-item" id="logout-btn">Logout</a>
-  `;
+  // Add event listeners
+  const dropdownBtn = profileContainer.querySelector('.profile-btn');
+  const dropdownContent = profileContainer.querySelector('.dropdown-content');
+  const editProfileBtn = document.getElementById('edit-profile-btn');
 
-  container.innerHTML = '';
-  container.appendChild(button);
-  container.appendChild(dropdown);
-
-  // Add event listener for Edit Profile button
-  document.getElementById('edit-profile-btn').addEventListener('click', (e) => {
-    e.preventDefault();
-    dropdown.classList.remove('show'); // Hide dropdown when opening modal
-    showEditProfileModal();
-  });
-
-  button.addEventListener('click', (e) => {
+  dropdownBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
-    dropdown.classList.toggle('show');
+    dropdownContent.classList.toggle('show');
   });
 
+  // Add edit profile click handler
+  editProfileBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    dropdownContent.classList.remove('show'); // Close dropdown
+    showEditProfileModal(); // Show edit profile modal
+  });
+
+  // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
-    if (!container.contains(e.target)) {
-      dropdown.classList.remove('show');
+    if (!profileContainer.contains(e.target)) {
+      dropdownContent.classList.remove('show');
     }
   });
 
-  document.getElementById('logout-btn').addEventListener('click', async (e) => {
+  // Handle logout
+  document.getElementById('logout-btn')?.addEventListener('click', async (e) => {
     e.preventDefault();
     try {
       await signOut(auth);
@@ -74,8 +80,26 @@ async function createProfileDropdown(user) {
   });
 }
 
-onAuthStateChanged(auth, (user) => {
+// Main authentication state observer
+onAuthStateChanged(auth, async (user) => {
   if (user) {
-    createProfileDropdown(user);
+    try {
+      const userProfile = await getUserProfile(user.uid);
+      createProfileDropdown(user, userProfile);
+    } catch (error) {
+      console.error('Error handling user profile:', error);
+    }
+  } else {
+    const profileContainer = document.getElementById('profile-container');
+    if (profileContainer) {
+      profileContainer.innerHTML = `
+        <div class="auth-buttons">
+          <a href="login.html" class="login-btn">Login</a>
+          <a href="signup.html" class="signup-btn">Sign Up</a>
+        </div>
+      `;
+    }
   }
 });
+
+export { getUserProfile };

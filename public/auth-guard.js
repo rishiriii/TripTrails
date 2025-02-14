@@ -2,8 +2,7 @@ import { auth, db } from '../firebase.js';
 import { 
   onAuthStateChanged, 
   setPersistence, 
-  browserLocalPersistence, 
-  signOut 
+  browserLocalPersistence 
 } from 'firebase/auth';
 import { 
   collection, 
@@ -11,19 +10,23 @@ import {
   query, 
   where, 
   addDoc,
-  doc,
-  getDoc,
-  setDoc,
   updateDoc
 } from 'firebase/firestore';
 
-// Set persistence to local to keep user logged in
+// Debug flag - set to true to see console logs
+const DEBUG = true;
+
+function log(...args) {
+  if (DEBUG) console.log(...args);
+}
+
+// Set persistence to local
 setPersistence(auth, browserLocalPersistence)
   .catch((error) => {
     console.error('Error setting persistence:', error);
   });
 
-// Define protected routes that require authentication
+// Protected routes list
 const protectedRoutes = [
   'explore.html',
   'add-trip.html',
@@ -32,17 +35,17 @@ const protectedRoutes = [
   'edit-profile.html'
 ];
 
-// Function to check if current page is protected
+// Check if current page is protected
 function isProtectedRoute() {
   return protectedRoutes.some(route => window.location.pathname.includes(route));
 }
 
-// Function to generate random number for username suggestions
+// Generate random number for username suggestions
 function getRandomNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Function to check if username exists in database
+// Check if username exists
 async function checkUsernameExists(username) {
   const userProfileRef = collection(db, 'userProfiles');
   const q = query(userProfileRef, where('username', '==', username));
@@ -50,162 +53,60 @@ async function checkUsernameExists(username) {
   return !querySnapshot.empty;
 }
 
-// Function to generate username suggestions
+// Generate username suggestions
 function generateUsernameSuggestions(baseUsername) {
-  const suggestions = [];
-  for (let i = 0; i < 3; i++) {
+  return Array.from({ length: 3 }, () => {
     const randomNum = getRandomNumber(1000, 9999);
-    suggestions.push(`${baseUsername}${randomNum}`);
-  }
-  return suggestions;
-}
-
-// Function to show authentication modal
-function showAuthModal() {
-  const modalHTML = `
-    <div id="auth-modal" class="modal">
-      <div class="modal-content">
-        <h2>Sign in to continue</h2>
-        <p>Please log in or create an account to access this feature.</p>
-        <div class="auth-buttons">
-          <button onclick="window.location.href='login.html'" class="primary-btn">Login</button>
-          <button onclick="window.location.href='signup.html'" class="secondary-btn">Sign Up</button>
-        </div>
-        <button class="close-modal">×</button>
-      </div>
-    </div>
-  `;
-
-  // Add modal if it doesn't exist
-  if (!document.getElementById('auth-modal')) {
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-  }
-  
-  // Add modal styles if not already present
-  if (!document.getElementById('auth-modal-styles')) {
-    const styles = `
-      <style id="auth-modal-styles">
-        .modal {
-          display: flex;
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.5);
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-        }
-        .modal-content {
-          background-color: white;
-          padding: 2rem;
-          border-radius: 8px;
-          text-align: center;
-          max-width: 400px;
-          width: 90%;
-          position: relative;
-        }
-        .auth-buttons {
-          display: flex;
-          gap: 1rem;
-          justify-content: center;
-          margin-top: 1.5rem;
-        }
-        .auth-buttons button {
-          padding: 0.5rem 2rem;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        .close-modal {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background: none;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-        }
-      </style>
-    `;
-    document.head.insertAdjacentHTML('beforeend', styles);
-  }
-
-  // Add event listeners for modal
-  const modal = document.getElementById('auth-modal');
-  const closeBtn = modal.querySelector('.close-modal');
-
-  // Close modal when clicking outside or on close button
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.remove();
-      if (isProtectedRoute()) {
-        window.location.href = 'home.html';
-      }
-    }
-  });
-
-  closeBtn.addEventListener('click', () => {
-    modal.remove();
-    if (isProtectedRoute()) {
-      window.location.href = 'home.html';
-    }
+    return `${baseUsername}${randomNum}`;
   });
 }
 
-// Function to prompt for username
+// Show username prompt modal
 async function promptForUsername(defaultUsername) {
+  log('Showing username prompt for:', defaultUsername);
+  
   const modalHTML = `
-    <div id="username-modal" class="modal">
-      <div class="modal-content">
+    <div id="username-modal" class="modal" style="
+      display: flex;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    ">
+      <div class="modal-content" style="
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 400px;
+        position: relative;
+      ">
         <h2>Choose a Username</h2>
         <p>This will be your public display name</p>
-        <div id="username-error" class="error-message"></div>
+        <div id="username-error" style="color: red; margin: 5px 0;"></div>
         <input type="text" id="username-input" value="${defaultUsername}" 
-               class="username-input" maxlength="30" />
-        <div id="username-suggestions" class="suggestions"></div>
-        <button id="submit-username" class="primary-btn">Submit</button>
+               style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;"
+               maxlength="30" />
+        <div id="username-suggestions" style="display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0;"></div>
+        <button id="submit-username" style="
+          background-color: #007bff;
+          color: white;
+          padding: 8px 16px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          width: 100%;
+        ">Submit</button>
       </div>
     </div>
   `;
 
   document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-  // Add styles for username modal if not present
-  if (!document.getElementById('username-modal-styles')) {
-    const styles = `
-      <style id="username-modal-styles">
-        .username-input {
-          width: 100%;
-          padding: 8px;
-          margin: 10px 0;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        }
-        .error-message {
-          color: #ff4444;
-          margin: 5px 0;
-        }
-        .suggestions {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          margin: 10px 0;
-        }
-        .suggestion-btn {
-          padding: 4px 8px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          background: #f5f5f5;
-          cursor: pointer;
-        }
-        .suggestion-btn:hover {
-          background: #e5e5e5;
-        }
-      </style>
-    `;
-    document.head.insertAdjacentHTML('beforeend', styles);
-  }
 
   const modal = document.getElementById('username-modal');
   const input = document.getElementById('username-input');
@@ -226,10 +127,18 @@ async function promptForUsername(defaultUsername) {
             errorDiv.textContent = 'Username already taken. Try one of these:';
             const suggestions = generateUsernameSuggestions(username);
             suggestionsDiv.innerHTML = suggestions
-              .map(suggestion => `<button class="suggestion-btn">${suggestion}</button>`)
+              .map(suggestion => `
+                <button style="
+                  padding: 4px 8px;
+                  border: 1px solid #ddd;
+                  border-radius: 4px;
+                  background: #f5f5f5;
+                  cursor: pointer;
+                ">${suggestion}</button>
+              `)
               .join('');
 
-            document.querySelectorAll('.suggestion-btn').forEach(btn => {
+            suggestionsDiv.querySelectorAll('button').forEach(btn => {
               btn.addEventListener('click', () => {
                 input.value = btn.textContent;
                 errorDiv.textContent = '';
@@ -241,11 +150,12 @@ async function promptForUsername(defaultUsername) {
             suggestionsDiv.innerHTML = '';
           }
         }
-      }, 500); // Debounce delay
+      }, 500);
     });
 
     submitButton.addEventListener('click', async () => {
       const username = input.value.trim();
+      
       if (!username) {
         errorDiv.textContent = 'Username cannot be empty';
         return;
@@ -267,16 +177,16 @@ async function promptForUsername(defaultUsername) {
   });
 }
 
-// Function to create user profile
+// Create user profile
 async function createUserProfile(user) {
+  log('Creating profile for user:', user.email);
   const userProfileRef = collection(db, 'userProfiles');
   const defaultUsername = user.email.split('@')[0];
   
   try {
-    // Prompt for username
     const username = await promptForUsername(defaultUsername);
+    log('Username selected:', username);
     
-    // Create profile document
     const profileData = {
       uid: user.uid,
       username: username,
@@ -300,100 +210,10 @@ async function createUserProfile(user) {
   }
 }
 
-// Function to update user profile
-async function updateUserProfile(userId, data) {
-  try {
-    const profileRef = doc(db, 'users', userId);
-    const profileDoc = await getDoc(profileRef);
-
-    if (profileDoc.exists()) {
-      // Update existing profile
-      await updateDoc(profileRef, data);
-    } else {
-      // Create new profile
-      await setDoc(profileRef, {
-        ...data,
-        createdAt: new Date().toISOString()
-      });
-    }
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    throw new Error('Failed to update profile');
-  }
-}
-
-// Function to display profile in navbar
-function displayProfile(user, userProfile) {
-  const profileContainer = document.getElementById('profile-container');
-  if (!profileContainer) return;
-
-  profileContainer.innerHTML = `
-    <div class="profile-dropdown">
-      <button class="profile-btn">
-        ${userProfile?.username || 'User'} 
-        <i class="fas fa-chevron-down"></i>
-      </button>
-      <div class="dropdown-content">
-        <a href="/profile.html">My Profile</a>
-        <a href="/my-trips.html">My Trips</a>
-        <a href="#" id="logout-btn">Logout</a>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('logout-btn')?.addEventListener('click', handleLogout);
-}
-
-async function handleLogout(e) {
-  e.preventDefault();
-  try {
-    await auth.signOut();
-    window.location.href = '/';
-  } catch (error) {
-    console.error('Error signing out:', error);
-  }
-}
-
-// Function to handle protected route access
-function handleProtectedRoute(user) {
-  if (!user && isProtectedRoute()) {
-    showAuthModal();
-    return false;
-  }
-  return true;
-}
-
-// Add authentication check function
-function checkAuth() {
-  return new Promise((resolve) => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      unsubscribe();
-      if (!user) {
-        const confirmLogin = confirm('Please log in to add a trip');
-        if (confirmLogin) {
-          window.location.href = '/login.html';
-        } else {
-          window.location.href = '/';
-        }
-        resolve(false);
-      } else {
-        resolve(true);
-      }
-    });
-  });
-}
-
-
-// Main authentication state observer
+// Main auth state observer
 onAuthStateChanged(auth, async (user) => {
-  // Check if route is protected
-  if (!handleProtectedRoute(user)) {
-    return;
-  }
-
-  const profileContainer = document.getElementById('profile-container');
-  if (!profileContainer) return;
-
+  log('Auth state changed:', user?.email);
+  
   if (user) {
     try {
       // Check if user has a profile
@@ -401,39 +221,65 @@ onAuthStateChanged(auth, async (user) => {
       const q = query(userProfileRef, where('uid', '==', user.uid));
       const querySnapshot = await getDocs(q);
 
-      let userProfile;
       if (querySnapshot.empty) {
-        // Create new profile if none exists
-        userProfile = await createUserProfile(user);
+        log('No profile found - creating new profile');
+        await createUserProfile(user);
+        log('Profile created successfully');
+        // Optionally reload the page
+        window.location.reload();
       } else {
-        userProfile = querySnapshot.docs[0].data();
-        // Update last login
+        const userProfile = querySnapshot.docs[0].data();
         const profileDoc = querySnapshot.docs[0].ref;
-        await profileDoc.update({ lastLogin: new Date() });
+        await updateDoc(profileDoc, { lastLogin: new Date() });
+        log('Existing profile found and updated');
       }
-
-      // Display profile in navbar
-      displayProfile(user, userProfile);
     } catch (error) {
-      console.error('Error handling user profile:', error);
+      console.error('Error in auth state change:', error);
     }
-  } else {
-    // Show login/signup buttons for non-authenticated users
-    profileContainer.innerHTML = `
-      <div class="auth-buttons">
-        <button onclick="window.location.href='login.html'" class="login-btn">Login</button>
-        <button onclick="window.location.href='signup.html'" class="signup-btn">Sign Up</button>
-      </div>
-    `;
   }
 });
 
-// Export necessary functions for use in other files
+function checkAuth() {
+  return new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      unsubscribe(); // Stop listening immediately
+      
+      if (!user) {
+        const confirmLogin = confirm('Please log in to continue');
+        if (confirmLogin) {
+          window.location.href = '/login.html';
+        } else {
+          window.location.href = '/';
+        }
+        resolve(false);
+      } else {
+        // Check if user has a profile
+        try {
+          const userProfileRef = collection(db, 'userProfiles');
+          const q = query(userProfileRef, where('uid', '==', user.uid));
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+            // Create new profile if none exists
+            await createUserProfile(user);
+          }
+          
+          resolve(true);
+        } catch (error) {
+          console.error('Error checking user profile:', error);
+          resolve(false);
+        }
+      }
+    });
+  });
+}
+
+
+// Export necessary functions
 export {
   checkUsernameExists,
   generateUsernameSuggestions,
   createUserProfile,
   isProtectedRoute,
-  showAuthModal,
   checkAuth
 };

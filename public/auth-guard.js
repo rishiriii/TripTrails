@@ -61,6 +61,17 @@ function generateUsernameSuggestions(baseUsername) {
   });
 }
 
+// Get default username from user data
+function getDefaultUsername(user) {
+  // Prefer displayName if available
+  if (user.displayName) {
+    // Remove spaces and special characters, convert to lowercase
+    return user.displayName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+  // Fall back to email prefix if no displayName
+  return user.email.split('@')[0];
+}
+
 // Show username prompt modal
 async function promptForUsername(defaultUsername) {
   log('Showing username prompt for:', defaultUsername);
@@ -181,7 +192,7 @@ async function promptForUsername(defaultUsername) {
 async function createUserProfile(user) {
   log('Creating profile for user:', user.email);
   const userProfileRef = collection(db, 'userProfiles');
-  const defaultUsername = user.email.split('@')[0];
+  const defaultUsername = getDefaultUsername(user);
   
   try {
     const username = await promptForUsername(defaultUsername);
@@ -189,9 +200,9 @@ async function createUserProfile(user) {
     
     const profileData = {
       uid: user.uid,
-      username: username,
+      displayName: username,
       email: user.email,
-      displayName: user.displayName || username,
+      //displayName: user.displayName || username,
       photoURL: user.photoURL || null,
       createdAt: new Date(),
       lastLogin: new Date(),
@@ -273,7 +284,6 @@ function checkAuth() {
     });
   });
 }
-
 
 // Export necessary functions
 export {

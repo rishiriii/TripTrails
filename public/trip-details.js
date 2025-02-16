@@ -267,7 +267,7 @@ async function loadTripDetails() {
     const authorPhoto = document.getElementById('author-photo');
     const authorName = document.getElementById('trip-username');
     const authorContainer = authorPhoto.parentElement;
-    showUserProfileModal(trip.authorUid); // Pass the UID
+   // showUserProfileModal(trip.authorUid); // Pass the UID
     // Add author ID to the container
     authorContainer.dataset.authorId = trip.authorId;
     
@@ -1272,7 +1272,6 @@ async function loadUserProfile(userId) {
         const errorData = await response.json();
         throw new Error(errorData.message || `Failed with status: ${response.status}`);
       } else {
-        // For HTML responses, just log the first 100 characters to see what's coming back
         const text = await response.text();
         console.error('Received HTML instead of JSON:', text.substring(0, 100) + '...');
         throw new Error(`Server returned ${response.status}: ${response.statusText}`);
@@ -1313,7 +1312,6 @@ async function fetchUserTrips(userId) {
 }
 
 function createUserProfileModal() {
-  // Check if modal already exists
   if (document.getElementById('userProfileModal')) {
     return;
   }
@@ -1334,8 +1332,8 @@ function createUserProfileModal() {
               <span class="stat-label">Trips</span>
             </div>
             <div class="stat">
-              <span class="stat-value" id="modal-joined-date">-</span>
-              <span class="stat-label">Joined</span>
+              <span class="stat-value" id="modal-location">-</span>
+              <span class="stat-label">Location</span>
             </div>
             <div class="stat">
               <span class="stat-value" id="modal-user-likes">-</span>
@@ -1352,10 +1350,8 @@ function createUserProfileModal() {
     </div>
   `;
 
-  // Append modal to body
   document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-  // Add event listener to close button
   const modal = document.getElementById('userProfileModal');
   const closeButton = modal.querySelector('.close-button');
   
@@ -1363,17 +1359,32 @@ function createUserProfileModal() {
     modal.style.display = 'none';
   });
 
-  // Close when clicking outside the modal
   window.addEventListener('click', (event) => {
     if (event.target === modal) {
       modal.style.display = 'none';
     }
   });
 
-  // Add CSS for the modal
   const styleElement = document.createElement('style');
   styleElement.textContent = `
+    .profile-modal {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+    }
+
     .profile-modal-content {
+      position: relative;
+      overflow-y: auto;
+      margin: auto;
+      background: white;
       max-width: 600px;
       padding: 30px;
       border-radius: 12px;
@@ -1405,7 +1416,7 @@ function createUserProfileModal() {
       display: flex;
       justify-content: space-between;
       margin-bottom: 30px;
-      padding: 15px;
+      padding: 10px;
       background: #f5f8fa;
       border-radius: 8px;
     }
@@ -1427,43 +1438,41 @@ function createUserProfileModal() {
       color: #7f8c8d;
     }
     
-   .user-trips-container {
-  display: flex; /* Align trips in a row */
-  flex-wrap: nowrap; /* Prevent wrapping */
-  gap: 16px; /* Space between trips */
-  overflow-x: auto; /* Enable horizontal scrolling */
-  overflow-y: hidden; /* Hide vertical scrolling */
-  white-space: nowrap; /* Prevent line breaks */
-  padding-bottom: 10px; /* Prevent cut-off */
-  max-width: 100%; /* Fit within modal */
-  scrollbar-width: thin; /* Firefox scrollbar */
-  scrollbar-color: #aaa transparent;
-}
+    .user-trips-container {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 16px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      padding-bottom: 5px;
+      max-width: 100%;
+      scrollbar-width: thin;
+      scrollbar-color: #aaa transparent;
+    }
 
-/* Make trip cards stay the same width */
-.user-trip-card {
-  flex: 0 0 auto; /* Prevent stretching */
-  min-width: 250px;
-  max-width: 300px;
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
+    .user-trip-card {
+      flex: 0 0 auto;
+      min-width: 250px;
+      max-width: 300px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
 
-/* Scrollbar Styling for WebKit Browsers */
-.user-trips-container::-webkit-scrollbar {
-  height: 6px; /* Thin horizontal scrollbar */
-}
+    .user-trips-container::-webkit-scrollbar {
+      height: 8px;
+    }
 
-.user-trips-container::-webkit-scrollbar-thumb {
-  background: #bbb;
-  border-radius: 4px;
-}
+    .user-trips-container::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
 
-.user-trips-container::-webkit-scrollbar-thumb:hover {
-  background: #999;
-}
+    .user-trips-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
     
     .user-trip-card:hover {
       transform: translateY(-5px);
@@ -1504,7 +1513,6 @@ function createUserProfileModal() {
 }
 
 async function showUserProfileModal(userId, username, photoURL) {
-  // Create modal if it doesn't exist
   createUserProfileModal();
   
   const modal = document.getElementById('userProfileModal');
@@ -1512,11 +1520,10 @@ async function showUserProfileModal(userId, username, photoURL) {
   const modalUserName = document.getElementById('modal-user-name');
   const modalUserBio = document.getElementById('modal-user-bio');
   const modalTripCount = document.getElementById('modal-trip-count');
-  const modalJoinedDate = document.getElementById('modal-joined-date');
+  const modalLocation = document.getElementById('modal-location');
   const modalUserLikes = document.getElementById('modal-user-likes');
   const userTripsContainer = document.getElementById('user-trips-container');
   
-  // Set initial values
   modalUserName.textContent = username || 'Loading...';
   if (photoURL) {
     modalUserPhoto.src = photoURL;
@@ -1530,43 +1537,31 @@ async function showUserProfileModal(userId, username, photoURL) {
   
   modalUserBio.textContent = 'Loading bio...';
   modalTripCount.textContent = '-';
-  modalJoinedDate.textContent = '-';
+  modalLocation.textContent = '-';
   modalUserLikes.textContent = '-';
   userTripsContainer.innerHTML = '<div class="loading-spinner">Loading trips...</div>';
   
-  // Show the modal
   modal.style.display = 'block';
   
   try {
-    // Fetch user profile data
     const userProfile = await loadUserProfile(userId);
     
-    // Update profile info
     modalUserName.textContent = userProfile.displayName || username || 'Anonymous User';
     modalUserBio.textContent = userProfile.bio || 'No bio available';
     
-    // Format and display joined date
-    if (userProfile.createdAt) {
-      const joinDate = new Date(userProfile.createdAt);
-      modalJoinedDate.textContent = joinDate.toLocaleDateString('en-US', { 
-        month: 'short', 
-        year: 'numeric' 
-      });
-    }
+    // Display location instead of join date
+    modalLocation.textContent = userProfile.location || 'Not specified';
     
     modalUserLikes.textContent = userProfile.totalLikes || 0;
     
-    // Fetch user trips
     const trips = await fetchUserTrips(userId);
     modalTripCount.textContent = trips.length;
     
-    // Display trips
     if (trips.length === 0) {
       userTripsContainer.innerHTML = '<p class="no-trips">This user hasn\'t posted any trips yet.</p>';
     } else {
       userTripsContainer.innerHTML = '';
       
-      // Sort trips by date (newest first)
       trips.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
       trips.forEach(trip => {
@@ -1576,12 +1571,14 @@ async function showUserProfileModal(userId, username, photoURL) {
         const defaultTripImage = '/images/default-trip-banner.jpg';
         const tripImage = trip.bannerPhoto || (trip.mediaUrls && trip.mediaUrls.length > 0 ? trip.mediaUrls[0] : defaultTripImage);
         
+        const stopCount = trip.stops ? trip.stops.length : 0;
+        
         tripCard.innerHTML = `
           <img src="${tripImage}" alt="${trip.title}" class="user-trip-image" 
                onerror="this.onerror=null; this.src='${defaultTripImage}'">
           <div class="user-trip-details">
             <h4 class="user-trip-title">${trip.title || 'Untitled Trip'}</h4>
-            <div class="user-trip-dates">${trip.days || 0} days${trip.start && trip.end ? ` • ${trip.start} to ${trip.end}` : ''}</div>
+            <div class="user-trip-dates">${trip.days || 0} days${trip.start && trip.end ? ` • ${stopCount} stops` : ''}</div>
             <div class="user-trip-stats">
               <span><i class="far fa-heart"></i> ${trip.likes || 0}</span>
               <span><i class="far fa-eye"></i> ${trip.views || 0}</span>
@@ -1589,7 +1586,6 @@ async function showUserProfileModal(userId, username, photoURL) {
           </div>
         `;
         
-        // Make the card clickable
         tripCard.addEventListener('click', () => {
           window.location.href = `trip-details.html?id=${trip.id}`;
         });

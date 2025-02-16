@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trip Details</title>
   <link rel="stylesheet" href="trip-details-styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
   <script>
     function initGoogleMapsAPI() {
       console.log('Google Maps API loading callback triggered');
@@ -68,12 +69,10 @@
     <!-- Engagement Section -->
     <div class="engagement-section">
       <div class="stat">
-        <span>👁️ Views:</span>
-        <span id="viewCount">0</span>
+        <i class="fas fa-eye"></i> <span id="viewCount">0</span>
       </div>
       <button id="likeButton" class="like-button">
-        <span class="heart">♡</span>
-        <span id="likeCount">0</span>
+        <i class="fas fa-heart"></i> <span id="likeCount">0</span>
       </button>
     </div>
     <div id="reportModal" class="modal">

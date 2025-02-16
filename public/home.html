@@ -16,7 +16,7 @@
                 <a href="/explore.html" class="nav-link">Explore</a>
                 <a href="#" class="nav-link">About Us</a>
                 <a href="#" class="nav-link">Contact Us</a>
-                
+                <button onclick="window.location.href='add-trip.html'" class="add-trip-btn">Add Trip</button>
             </nav>
             <div id="profile-container"></div>
             <button class="menu-toggle" aria-label="Toggle menu">
@@ -38,20 +38,7 @@
 
         <section class="gallery">
             <div class="container">
-                <div class="gallery-grid">
-                    <div class="gallery-item animate-on-scroll">
-                        <img src="https://source.unsplash.com/random/400x300?travel" alt="Travel destination 1" loading="lazy">
-                    </div>
-                    <div class="gallery-item animate-on-scroll">
-                        <img src="https://source.unsplash.com/random/400x300?landscape" alt="Travel destination 2" loading="lazy">
-                    </div>
-                    <div class="gallery-item animate-on-scroll">
-                        <img src="https://source.unsplash.com/random/400x300?city" alt="Travel destination 3" loading="lazy">
-                    </div>
-                    <div class="gallery-item animate-on-scroll">
-                        <img src="https://farm7.staticflickr.com/6042/7012519385_f7e92b8d8e_z.jpg" alt="Travel destination 4" loading="lazy">
-                    </div>
-                </div>
+                <!-- The banner will be dynamically inserted here -->
             </div>
         </section>
 
@@ -117,14 +104,13 @@
 
         <section class="destinations">
             <div class="container">
-                <h2 class="animate-on-scroll">Popular Destinations</h2>
+                <h2 class="animate-on-scroll">Top Destinations</h2>
                 <div class="destinations-grid" id="top-destinations">
-                    <!-- Will be populated by JavaScript -->
+                    <!-- Destinations will be loaded dynamically -->
                 </div>
             </div>
         </section>
-    </main>
-
+        
     <footer class="footer">
         <div class="container">
             <p>&copy; 2025 TripTrails. All rights reserved.</p>

@@ -21,7 +21,7 @@ function createProfileDropdown(user, userProfile) {
   const profileContainer = document.getElementById('profile-container');
   if (!profileContainer) return;
 
-  const displayName = userProfile?.username || user.email.split('@')[0];
+  const displayName = userProfile?.displayName || user.email.split('@')[0];
 
   profileContainer.innerHTML = `
     <div class="profile-dropdown">

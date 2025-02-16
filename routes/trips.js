@@ -27,9 +27,24 @@ tripsRouter.get('/search', async (req, res) => {
       return res.json([]);
     }
 
-    let trips = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
+    let trips = await Promise.all(snapshot.docs.map(async (doc) => {
+      const tripData = doc.data();
+      
+      // Fetch user data for each trip
+      const userProfilesRef = db.collection('userProfiles');
+      const userQuery = userProfilesRef.where('uid', '==', tripData.userId);
+      const userSnapshot = await userQuery.get();
+      
+      let userData = { displayName: 'Unknown user' };
+      if (!userSnapshot.empty) {
+        userData = userSnapshot.docs[0].data();
+      }
+
+      return {
+        id: doc.id,
+        ...tripData,
+        DisplayName: userData.displayName
+      };
     }));
 
     if (start || end) {
@@ -110,6 +125,11 @@ tripsRouter.post('/', async (req, res) => {
       });
     }
 
+    // Get user profile data
+    const userProfileRef = db.collection('userProfiles').doc(req.user.uid);
+    const userProfileDoc = await userProfileRef.get();
+    const userProfileData = userProfileDoc.data() || {};
+
     const tripsRef = db.collection('trips');
     
     const processedTripData = {
@@ -125,7 +145,9 @@ tripsRouter.post('/', async (req, res) => {
       createdAt: Date.now(),
       views: 0,
       likes: 0,
-      stops: tripData.stops || []
+      stops: tripData.stops || [],
+      // Add user profile data
+    
     };
 
     console.log('Saving trip with data:', processedTripData);
@@ -195,7 +217,7 @@ tripsRouter.get('/:id', async (req, res) => {
     const userQuery = userProfilesRef.where('uid', '==', tripData.userId); 
     const userSnapshot = await userQuery.get();
     
-    let userData = { username: 'Unknown user' };
+    let userData = { displayname: 'Unknown user' };
     if (!userSnapshot.empty) {
       userData = userSnapshot.docs[0].data();
     }
@@ -203,8 +225,9 @@ tripsRouter.get('/:id', async (req, res) => {
     res.json({
       id: tripDoc.id,
       ...processedTripData,
-      authorUsername: userData.username,
-      authorDisplayName: userData.displayName
+      authorUsername: userData.userName,
+      authorDisplayName: userData.displayName,
+      authorPhotoURL: userData.photoURL
     });
   } catch (error) {
     console.error('Error fetching trip:', error.message);
@@ -225,16 +248,33 @@ tripsRouter.delete('/:id', async (req, res) => {
     }
 
     const tripData = tripDoc.data();
+    const destinationName = tripData.start; // Get the starting destination of the trip
+
+    // Reference the destination in the "destinations" collection
+    const formattedDestination = destinationName.charAt(0).toUpperCase() + destinationName.slice(1).toLowerCase();
+    const destinationQuery = db.collection('destinations').where('name', '==', formattedDestination);
+    const destinationSnapshot = await destinationQuery.get(); // Add this line to get the snapshot
+
+    if (!destinationSnapshot.empty) {
+      const destinationDoc = destinationSnapshot.docs[0];
+      const destinationRef = destinationDoc.ref;
+      
+      // Decrease the trip count by 1, but prevent it from going below zero
+      await destinationRef.update({
+        tripCount: Math.max(0, (destinationDoc.data().tripCount || 0) - 1)
+      });
+    }
 
     // Delete the trip from Firestore
     await tripRef.delete();
 
-    res.status(200).send({ message: 'Trip deleted successfully' });
+    res.status(200).send({ message: 'Trip deleted successfully, trip count updated.' });
   } catch (error) {
     console.error('Error deleting trip:', error.message);
     res.status(500).send({ message: 'Error deleting trip', error: error.message });
   }
 });
+
 
 // Update fields in a trip
 tripsRouter.patch('/:id', async (req, res) => {
@@ -378,6 +418,93 @@ tripsRouter.post('/:id/views', async (req, res) => {
     } catch (error) {
       console.error('Error removing like:', error);
       res.status(500).send({ message: 'Error removing like', error: error.message });
+    }
+  });
+
+  tripsRouter.post('/:id/report', async (req, res) => {
+    const tripId = req.params.id;
+    const reporterId = req.user.uid;
+    
+    try {
+      // First get the trip details to verify it exists and get owner ID
+      const tripRef = db.collection('trips').doc(tripId);
+      const tripDoc = await tripRef.get();
+  
+      if (!tripDoc.exists) {
+        return res.status(404).json({ 
+          message: 'Trip not found' 
+        });
+      }
+  
+      const tripData = tripDoc.data();
+      const tripOwnerId = tripData.userId;
+  
+      // Don't allow users to report their own trips
+      if (tripOwnerId === reporterId) {
+        return res.status(400).json({
+          message: 'You cannot report your own trip'
+        });
+      }
+  
+      // Validate required fields
+      const { reason, details } = req.body;
+      if (!reason || !details) {
+        return res.status(400).json({
+          message: 'Missing required fields: reason and details are required'
+        });
+      }
+  
+      // Create the report document
+      const reportData = {
+        tripId,
+        tripOwnerId,
+        reporterId,
+        reason,
+        details,
+        status: 'pending',
+        reportedAt: new Date().toISOString(),
+        reviewedAt: null,
+        reviewNotes: null,
+        reportedTripData: {
+          title: tripData.title,
+          createdAt: tripData.createdAt,
+          url: `${req.protocol}://${req.get('host')}/trips/${tripId}`
+        }
+      };
+  
+      // Check if this user has already reported this trip
+      const existingReportQuery = await db.collection('tripReports')
+        .where('tripId', '==', tripId)
+        .where('reporterId', '==', reporterId)
+        .get();
+  
+      if (!existingReportQuery.empty) {
+        return res.status(400).json({
+          message: 'You have already reported this trip'
+        });
+      }
+  
+      // Add the report to the tripReports collection
+      const reportRef = await db.collection('tripReports').add(reportData);
+  
+      // Update the trip document with report reference
+      await tripRef.update({
+        reportCount: (tripData.reportCount || 0) + 1,
+        lastReportedAt: reportData.reportedAt,
+        reports: [...(tripData.reports || []), reportRef.id]
+      });
+  
+      res.status(201).json({
+        message: 'Report submitted successfully',
+        reportId: reportRef.id
+      });
+  
+    } catch (error) {
+      console.error('Error handling trip report:', error);
+      res.status(500).json({
+        message: 'Error submitting report',
+        error: error.message
+      });
     }
   });
 

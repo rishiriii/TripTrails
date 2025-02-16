@@ -262,8 +262,23 @@ async function loadTripDetails() {
     
     document.getElementById('trip-description').textContent = 
       trip.description || 'No description available';
-    document.getElementById('trip-username').textContent = 
-      `Posted by: ${trip.authorUsername || trip.authorDisplayName || 'Unknown user'}`;
+
+    // Updated profile photo handling
+    const authorPhoto = document.getElementById('author-photo');
+    const authorName = document.getElementById('trip-username');
+    
+    if (trip.authorPhotoURL) {
+      // Only set the error handler after setting the actual photo URL
+      authorPhoto.onerror = function() {
+        this.onerror = null; // Prevent infinite loop if default image also fails
+        this.src = '/images/default-profile.jpg';
+      };
+      authorPhoto.src = trip.authorPhotoURL;
+    } else {
+      authorPhoto.src = '/images/default-profile.jpg';
+    }
+    
+    authorName.textContent = `Posted by: ${trip.authorDisplayName || 'Unknown user'}`;
 
     // Populate stops
     const stopsList = document.getElementById('trip-stops');
@@ -999,18 +1014,218 @@ if (!user) {
 }
 });
 
+
 // Add this at the beginning of your DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', async () => {
-  // Add back button to the page
-  const header = document.querySelector('header') || document.body.firstChild;
+  // Create back button
+  
   const backButton = document.createElement('button');
   backButton.className = 'back-button';
   backButton.innerHTML = '<i class="fas fa-arrow-left"></i> Back';
   backButton.addEventListener('click', () => {
     window.history.back();
   });
-  header.insertAdjacentElement('afterbegin', backButton);
 
+  // Find or create a suitable container for the back button
+  let container = document.querySelector('header');
+  if (!container) {
+    // If no header exists, create a new container div
+    container = document.createElement('div');
+    container.className = 'navigation-container';
+    // Insert at the very beginning of the body
+    document.body.insertBefore(container, document.body.firstChild);
+  }
+  
+  // Insert the back button as the first child of the container
+  container.insertBefore(backButton, container.firstChild);
+
+  // Rest of the code...
+  const modal = document.getElementById('reportModal');
+  const reportButton = document.getElementById('reportButton');
+  const closeButton = document.querySelector('.close-button');
+  const cancelButton = document.querySelector('.cancel-button');
+  const reportForm = document.getElementById('reportForm');
+
+  // Open modal
+  reportButton.addEventListener('click', () => {
+    modal.style.display = 'block';
+  });
+
+  // Close modal functions
+  function closeModal() {
+    modal.style.display = 'none';
+    reportForm.reset();
+  }
+
+  closeButton.addEventListener('click', closeModal);
+  cancelButton.addEventListener('click', closeModal);
+
+  // Close modal when clicking outside
+  window.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      closeModal();
+    }
+  });
+
+  // Handle form submission
+  reportForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const reason = document.getElementById('reportReason').value;
+    const details = document.getElementById('reportDetails').value;
+    
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch(`/trips/${tripId}/report`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reason,
+          details,
+          reportedAt: new Date().toISOString()
+        })
+      });
+
+      if (response.ok) {
+        // Create and show success message
+        const successMessage = document.createElement('div');
+        successMessage.className = 'success-message';
+        successMessage.textContent = 'Thank you for your report. We will review it shortly.';
+        
+        const modalBody = document.querySelector('.modal-body');
+        modalBody.innerHTML = '';
+        modalBody.appendChild(successMessage);
+        
+        // Close modal after 2 seconds
+        setTimeout(closeModal, 2000);
+      } else {
+        throw new Error('Failed to submit report');
+      }
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      alert('Failed to submit report. Please try again later.');
+    }
+  });
 });
-          
-          
+
+function showErrorMessage(message, container) {
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'error-message';
+  errorDiv.style.color = 'red';
+  errorDiv.style.padding = '10px';
+  errorDiv.style.marginTop = '10px';
+  errorDiv.textContent = message;
+  container.appendChild(errorDiv);
+
+  // Remove error message after 5 seconds
+  setTimeout(() => {
+    errorDiv.remove();
+  }, 5000);
+}
+
+function showSuccessMessage(message, container) {
+  const successDiv = document.createElement('div');
+  successDiv.className = 'success-message';
+  successDiv.style.color = 'green';
+  successDiv.style.padding = '10px';
+  successDiv.style.marginTop = '10px';
+  successDiv.textContent = message;
+  container.appendChild(successDiv);
+
+  // Remove success message after 3 seconds
+  setTimeout(() => {
+    successDiv.remove();
+  }, 3000);
+}
+
+// Update the report form submission handler
+reportForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  // Clear any existing error messages
+  const existingErrors = document.querySelectorAll('.error-message');
+  existingErrors.forEach(error => error.remove());
+  
+  const submitButton = reportForm.querySelector('button[type="submit"]');
+  const originalButtonText = submitButton.textContent;
+  submitButton.disabled = true;
+  submitButton.textContent = 'Submitting...';
+  
+  const reason = document.getElementById('reportReason').value;
+  const details = document.getElementById('reportDetails').value;
+  
+  try {
+    // Validate inputs
+    if (!reason) {
+      throw new Error('Please select a reason for reporting');
+    }
+    if (!details || details.trim().length < 10) {
+      throw new Error('Please provide more details about the issue (minimum 10 characters)');
+    }
+
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(`http://localhost:3000/trips/${tripId}/report`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        reason,
+        details,
+        reportedAt: new Date().toISOString()
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to submit report');
+    }
+
+    // Show success message and reset form
+    const modalBody = document.querySelector('.modal-body');
+    showSuccessMessage('Thank you for your report. We will review it shortly.', modalBody);
+    reportForm.reset();
+
+    // Close modal after delay
+    setTimeout(() => {
+      modal.style.display = 'none';
+    }, 2000);
+
+  } catch (error) {
+    console.error('Error submitting report:', error);
+    const modalBody = document.querySelector('.modal-body');
+    showErrorMessage(error.message || 'Failed to submit report. Please try again later.', modalBody);
+  } finally {
+    // Re-enable submit button
+    submitButton.disabled = false;
+    submitButton.textContent = originalButtonText;
+  }
+});
+
+// Add validation feedback as user types
+document.getElementById('reportDetails').addEventListener('input', (e) => {
+  const details = e.target.value;
+  const minLength = 10;
+  const remainingChars = minLength - details.trim().length;
+  
+  const feedbackEl = e.target.nextElementSibling || document.createElement('div');
+  feedbackEl.className = 'input-feedback';
+  
+  if (!e.target.nextElementSibling) {
+    e.target.parentNode.appendChild(feedbackEl);
+  }
+  
+  if (remainingChars > 0) {
+    feedbackEl.textContent = `Please add ${remainingChars} more character${remainingChars === 1 ? '' : 's'}`;
+    feedbackEl.style.color = 'orange';
+  } else {
+    feedbackEl.textContent = '✓ Length requirement met';
+    feedbackEl.style.color = 'green';
+  }
+});
+

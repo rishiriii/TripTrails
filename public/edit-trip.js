@@ -403,67 +403,56 @@ function initializeForm() {
   }
 
   onAuthStateChanged(auth, async (user) => {
+    console.log("🔥 Checking user authentication...");
+
     if (!user) {
-      alert('You must be logged in to edit trips.');
-      window.location.href = 'login.html';
-      return;
+        alert('You must be logged in to edit trips.');
+        console.log("❌ No user logged in. Redirecting to login.");
+        window.location.href = 'login.html';
+        return;
     }
 
     try {
-      const token = await user.getIdToken(true);
-      await loadTrip(token);
+        const token = await user.getIdToken(true);
+        console.log(`🔍 Logged-in user: ${user.email}, UID: ${user.uid}`);
+
+        // 🔥 Admin Check
+        if (user.email === "akl@gmail.com") {
+            console.log("✅ Admin detected: Access granted to edit any trip.");
+            await loadTrip(token);
+            return;
+        }
+
+        // 🔥 If not admin, check trip ownership
+        console.log(`📡 Fetching trip details for ID: ${tripId}...`);
+        const response = await fetch(`/trips/${tripId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const tripData = await response.json();
+        console.log(`🛠 Trip Owner ID: ${tripData.userId}, Current User ID: ${user.uid}`);
+
+        if (tripData.userId !== user.uid) {
+            alert("❌ You are not authorized to edit this trip.");
+            window.location.href = 'home.html';
+            return;
+        }
+
+        console.log("✅ User is trip owner: Editing allowed.");
+        await loadTrip(token);
     } catch (error) {
-      console.error('Error initializing form:', error);
-      alert('Failed to load trip details. Please try again later.');
+        console.error('❌ Error initializing form:', error);
+        alert('Failed to load trip details. Please try again later.');
     }
-  });
+});
+
+
 }
 
-// Add this to your explore.js file
-document.addEventListener('DOMContentLoaded', () => {
-  const expenseSlider = document.getElementById('expense-slider');
-  const expenseValue = document.getElementById('expense-value');
-  const expenseInput = document.querySelector('.expense-input');
 
-  // Create and insert progress bar element
-  const rangeProgress = document.createElement('div');
-  rangeProgress.className = 'range-progress';
-  expenseSlider.parentElement.appendChild(rangeProgress);
-
-  function updateSliderProgress(value) {
-    const min = parseInt(expenseSlider.min) || 0;
-    const max = parseInt(expenseSlider.max) || 10000;
-    const percentage = ((value - min) / (max - min)) * 100;
-    
-    // Update progress bar width and position
-    rangeProgress.style.width = `${percentage}%`;
-    rangeProgress.style.left = '0';
-  }
-
-  if (expenseSlider) {
-    // Initial update
-    updateSliderProgress(expenseSlider.value);
-
-    // Update on slider input
-    expenseSlider.addEventListener('input', (e) => {
-      const value = parseInt(e.target.value);
-      updateSliderProgress(value);
-      expenseValue.textContent = `$${value.toLocaleString()}`;
-      expenseInput.value = value;
-    });
-
-    // Update on text input
-    expenseInput.addEventListener('input', (e) => {
-      let value = parseInt(e.target.value);
-      if (isNaN(value)) value = 0;
-      if (value > parseInt(expenseSlider.max)) value = parseInt(expenseSlider.max);
-      if (value < parseInt(expenseSlider.min)) value = parseInt(expenseSlider.min);
-      
-      expenseSlider.value = value;
-      updateSliderProgress(value);
-      expenseValue.textContent = `$${value.toLocaleString()}`;
-    });
-  }
-});
 
 document.addEventListener('DOMContentLoaded', initializeForm);

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - TripTrails</title>
+    <link rel="stylesheet" href="admin.css">
+    
+</head>
+<body>
+    <header>
+        <h1>Admin Dashboard</h1>
+        <button onclick="logout()">Logout</button>
+    </header>
+
+    <section id="tripManagement">
+        <h2>Manage Trips</h2>
+        <div id="tripsContainer">Loading trips...</div>
+    </section>
+
+    <section id="userManagement">
+        <h2>Manage Users</h2>
+        <input type="text" id="searchUserId" placeholder="Enter User ID">
+        <button onclick="searchUser()">Search</button>
+        <div id="userDetails"></div>
+    </section>
+
+    <section id="reportsManagement">
+        <h2>Review Reported Trips</h2>
+        <div id="reportsContainer">Loading reports...</div>
+    </section>
+    <script type="module" src="admin.js"></script>
+</body>
+</html>

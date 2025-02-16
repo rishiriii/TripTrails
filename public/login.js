@@ -8,7 +8,6 @@ import {
 
 class PopupManager {
   static show(message, type = 'success') {
-    // Remove any existing popups
     const existingPopup = document.querySelector('.popup');
     if (existingPopup) existingPopup.remove();
 
@@ -22,17 +21,8 @@ class PopupManager {
     `;
 
     document.body.appendChild(popup);
-
-    // Auto-remove after 5 seconds
-    const autoRemove = setTimeout(() => {
-      popup.remove();
-    }, 5000);
-
-    // Remove popup if clicked before timeout
-    popup.addEventListener('click', () => {
-      clearTimeout(autoRemove);
-      popup.remove();
-    });
+    setTimeout(() => popup.remove(), 5000);
+    popup.addEventListener('click', () => popup.remove());
   }
 }
 
@@ -54,8 +44,7 @@ class LoginManager {
   }
 
   validateEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
   async handleLogin(e) {
@@ -78,12 +67,18 @@ class LoginManager {
       loginButton.disabled = true;
       loginButton.innerHTML = '<div class="loader"></div>';
 
+      // ✅ Hardcoded admin check
+      if (email === "akl@gmail.com" && password === "111111") {
+        PopupManager.show('Admin Login Successful!');
+        setTimeout(() => window.location.href = 'admin.html', 1500);
+        return;
+      }
+
+      // ✅ Normal login for other users
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       PopupManager.show('Login Successful!');
-      
-      setTimeout(() => {
-        window.location.href = 'home.html';
-      }, 1500);
+      setTimeout(() => window.location.href = 'home.html', 1500);
+
     } catch (error) {
       let errorMessage = 'Failed to log in. Please try again.';
       switch (error.code) {
@@ -100,7 +95,6 @@ class LoginManager {
           errorMessage = 'Too many failed attempts. Please try again later';
           break;
       }
-      
       PopupManager.show(errorMessage, 'error');
     } finally {
       const loginButton = this.loginForm.querySelector('button[type="submit"]');
@@ -136,7 +130,6 @@ class LoginManager {
           errorMessage = 'Invalid email address';
           break;
       }
-      
       PopupManager.show(errorMessage, 'error');
     }
   }
@@ -153,10 +146,8 @@ class LoginManager {
 
       const result = await signInWithPopup(auth, provider);
       PopupManager.show('Google Login Successful!');
-      
-      setTimeout(() => {
-        window.location.href = 'home.html';
-      }, 1500);
+      setTimeout(() => window.location.href = 'home.html', 1500);
+
     } catch (error) {
       let errorMessage = 'Failed to log in with Google';
       switch (error.code) {
@@ -167,7 +158,6 @@ class LoginManager {
           errorMessage = 'Login popup was blocked by browser';
           break;
       }
-      
       PopupManager.show(errorMessage, 'error');
     } finally {
       this.googleLoginButton.disabled = false;

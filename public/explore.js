@@ -1,5 +1,9 @@
-import { auth } from '../firebase.js';
+import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
+import { getStorage, ref, getDownloadURL } from 'firebase/storage';
+import { doc, getDoc } from 'firebase/firestore';
+
+// Cache for profile images
 
 let currentFilters = {
   stops: '',
@@ -10,6 +14,7 @@ let currentFilters = {
 };
 
 let allTrips = []; // Store all fetched trips
+
 
 document.addEventListener('DOMContentLoaded', () => {
   const searchBtn = document.getElementById('search-btn');
@@ -23,14 +28,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const expenseSlider = document.getElementById('expense-slider');
   const expenseValue = document.getElementById('expense-value');
   
-  // Add new expense input field
+  // Add expense input field
   const expenseInput = document.createElement('input');
   expenseInput.type = 'number';
   expenseInput.min = '0';
   expenseInput.max = '100000';
   expenseInput.className = 'expense-input';
   expenseInput.value = expenseSlider.value;
-  // Insert input field after the expense value display
   expenseValue.parentNode.insertBefore(expenseInput, expenseValue.nextSibling);
 
   // Update both display and input when slider changes
@@ -43,21 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Update slider and display when input changes
   expenseInput.oninput = function() {
     let value = parseInt(this.value);
-    
-    // Ensure value is within bounds
-    if (value < 0) value = 0;
-    if (value > 100000) value = 100000;
-    
+    value = Math.max(0, Math.min(value, 100000));
     expenseSlider.value = value;
     updateExpenseDisplay(value);
   }
 
-  // Function to update the expense display
   function updateExpenseDisplay(value) {
     expenseValue.textContent = `$${parseInt(value).toLocaleString()}`;
   }
 
-  // Modal controls remain the same
+  // Modal controls
   filterBtn.onclick = () => modal.style.display = "block";
   closeBtn.onclick = () => modal.style.display = "none";
   window.onclick = (event) => {
@@ -66,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Update reset filters to include the input field
+  // Reset filters
   resetFiltersBtn.onclick = () => {
     document.getElementById('stops-filter').value = '';
     document.getElementById('expense-slider').value = 10000;
@@ -85,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filterAndDisplayTrips();
   }
 
-  // Apply filters remains the same
+  // Apply filters
   applyFiltersBtn.onclick = () => {
     currentFilters = {
       stops: document.getElementById('stops-filter').value,
@@ -104,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Load all trips initially
+  // Load trips initially
   onAuthStateChanged(auth, (user) => {
     if (user) {
       searchTrips();
@@ -112,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function filterAndDisplayTrips() {
+async function filterAndDisplayTrips() {
   let filteredTrips = [...allTrips];
 
   // Apply location filters
@@ -172,10 +171,10 @@ function filterAndDisplayTrips() {
       break;
   }
 
-  displayTrips(filteredTrips);
+  await displayTrips(filteredTrips);
 }
 
-function displayTrips(trips) {
+async function displayTrips(trips) {
   const tripList = document.getElementById('trip-list');
   if (!tripList) return;
 
@@ -186,7 +185,9 @@ function displayTrips(trips) {
     return;
   }
 
-  trips.forEach(trip => {
+  for (const trip of trips) {
+  
+    
     const tripCard = document.createElement('div');
     tripCard.className = 'trip-card';
 
@@ -195,32 +196,45 @@ function displayTrips(trips) {
     const displayTitle = `${displayStart} to ${displayEnd}`;
 
     tripCard.innerHTML = `
-      <div class="card-image">
-        <img 
-          src="${trip.bannerPhoto || 'placeholder.jpg'}" 
-          alt="Banner Photo"
-          style="width: 100%; height: 150px; object-fit: cover; border-radius: 10px;">
-      </div>
-      <div class="card-content">
-        <h3>${displayTitle}</h3>
-        <p>${trip.days} Days / ${trip.nights} Nights</p>
-        <p>Cost: $${trip.expense?.toLocaleString() || 0}</p>
-        <p>Stops: ${trip.stops ? trip.stops.length : 0}</p>
-        <div class="trip-stats">
-          <span>👁️ ${trip.views || 0}</span>
-          <span>❤️ ${trip.likes || 0}</span>
-        </div>
-      </div>
-    `;
+  <div class="card-image">
+    <img 
+      src="${trip.bannerPhoto || '/images/placeholder.jpg'}" 
+      alt="Trip Banner"
+      style="width: 100%; height: 150px; object-fit: cover; border-radius: 10px 10px 0 0;"
+      onerror="this.src='/images/placeholder.jpg'"
+    >
+  </div>
+  <div class="card-content">
+    <h3>${displayTitle}</h3>
+    <p>${trip.days} Days / ${trip.nights} Nights</p>
+    <p>Cost: $${trip.expense?.toLocaleString() || 0}</p>
+    <p>Stops: ${trip.stops ? trip.stops.length : 0}</p>
+    
+    <!-- Profile section -->
+    <div class="trip-author">
+      <span class="author-name">${trip.DisplayName || 'Anonymous'}</span>
+    </div>
+
+    <div class="trip-stats">
+      <span class="stat-item">
+        <i class="fas fa-eye"></i>
+        ${trip.views || 0}
+      </span>
+      <span class="stat-item">
+        <i class="fas fa-heart"></i>
+        ${trip.likes || 0}
+      </span>
+    </div>
+  </div>
+`;
 
     tripCard.addEventListener('click', () => {
       window.location.href = `trip-details.html?id=${trip.id}`;
     });
 
     tripList.appendChild(tripCard);
-  });
+  }
 }
-
 
 async function searchTrips(start = '', end = '') {
   const tripList = document.getElementById('trip-list');
@@ -239,8 +253,6 @@ async function searchTrips(start = '', end = '') {
     const queryParams = new URLSearchParams();
     if (start) queryParams.append('start', start.toLowerCase());
     if (end) queryParams.append('end', end.toLowerCase());
-    
-    // Add timestamp to prevent caching
     queryParams.append('_t', Date.now());
     
     const response = await fetch(`/trips/search?${queryParams.toString()}`, {
@@ -248,7 +260,6 @@ async function searchTrips(start = '', end = '') {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
-        // Add cache control headers
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0'
@@ -261,14 +272,12 @@ async function searchTrips(start = '', end = '') {
     }
 
     allTrips = await response.json();
-    
-    // Ensure all trips have a createdAt timestamp
     allTrips = allTrips.map(trip => ({
       ...trip,
-      createdAt: trip.createdAt || Date.now() // Default to current time if missing
+      createdAt: trip.createdAt || Date.now()
     }));
     
-    filterAndDisplayTrips();
+    await filterAndDisplayTrips();
 
   } catch (error) {
     console.error('Error searching trips:', error.message);
@@ -281,64 +290,36 @@ async function searchTrips(start = '', end = '') {
   }
 }
 
-// Add event listeners for input fields to enable search-as-you-type
-document.addEventListener('DOMContentLoaded', () => {
-  const startLocation = document.getElementById('start-location');
-  const endLocation = document.getElementById('end-location');
-  let debounceTimer;
-
-  const debounceSearch = () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      searchTrips(startLocation.value, endLocation.value);
-    }, 500);
-  };
-
-  startLocation.addEventListener('input', debounceSearch);
-  endLocation.addEventListener('input', debounceSearch);
-});
-
-// Add this to your explore.js file
+// Add event listeners for the range slider
 document.addEventListener('DOMContentLoaded', () => {
   const expenseSlider = document.getElementById('expense-slider');
   const expenseValue = document.getElementById('expense-value');
-  const expenseInput = document.querySelector('.expense-input');
+  const filterModal = document.getElementById('filter-modal');
+  const filterOverlay = document.querySelector('.filter-modal-overlay');
 
-  // Create and insert progress bar element
-  const rangeProgress = document.createElement('div');
-  rangeProgress.className = 'range-progress';
-  expenseSlider.parentElement.appendChild(rangeProgress);
-
-  function updateSliderProgress(value) {
-    const min = parseInt(expenseSlider.min) || 0;
-    const max = parseInt(expenseSlider.max) || 10000;
-    const percentage = ((value - min) / (max - min)) * 100;
-    
-    // Update progress bar width and position
-    rangeProgress.style.width = `${percentage}%`;
-    rangeProgress.style.left = '0';
+  if (filterModal) {
+    filterModal.style.display = "none";
+  }
+  if (filterOverlay) {
+    filterOverlay.style.display = "none";
   }
 
   if (expenseSlider) {
-    // Initial update
+    const rangeProgress = document.createElement('div');
+    rangeProgress.className = 'range-progress';
+    expenseSlider.parentElement.appendChild(rangeProgress);
+
+    function updateSliderProgress(value) {
+      const min = parseInt(expenseSlider.min) || 0;
+      const max = parseInt(expenseSlider.max) || 10000;
+      const percentage = ((value - min) / (max - min)) * 100;
+      rangeProgress.style.width = `${percentage}%`;
+    }
+
     updateSliderProgress(expenseSlider.value);
 
-    // Update on slider input
     expenseSlider.addEventListener('input', (e) => {
       const value = parseInt(e.target.value);
-      updateSliderProgress(value);
-      expenseValue.textContent = `$${value.toLocaleString()}`;
-      expenseInput.value = value;
-    });
-
-    // Update on text input
-    expenseInput.addEventListener('input', (e) => {
-      let value = parseInt(e.target.value);
-      if (isNaN(value)) value = 0;
-      if (value > parseInt(expenseSlider.max)) value = parseInt(expenseSlider.max);
-      if (value < parseInt(expenseSlider.min)) value = parseInt(expenseSlider.min);
-      
-      expenseSlider.value = value;
       updateSliderProgress(value);
       expenseValue.textContent = `$${value.toLocaleString()}`;
     });

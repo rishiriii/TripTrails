@@ -269,8 +269,8 @@ export function showEditProfileModal() {
             </div>
 
             <div class="form-group">
-              <label for="username">Username</label>
-              <input type="text" id="username" name="username" required>
+              <label for="displayName">Display Name</label>
+              <input type="text" id="displayName" name="displayName" required>
               <div class="form-hint">This will be your public display name</div>
             </div>
 
@@ -328,8 +328,7 @@ export function showEditProfileModal() {
         const profileData = querySnapshot.docs[0].data();
         
         // Fill form fields
-        
-        document.getElementById('username').value = profileData.username || '';
+        document.getElementById('displayName').value = profileData.displayName || '';
         document.getElementById('bio').value = profileData.bio || '';
         document.getElementById('location').value = profileData.location || '';
         document.getElementById('birthday').value = profileData.birthday || '';
@@ -377,8 +376,7 @@ export function showEditProfileModal() {
 
       // Update profile data
       const profileData = {
-        
-        username: document.getElementById('username').value,
+        displayName: document.getElementById('displayName').value,
         bio: document.getElementById('bio').value,
         location: document.getElementById('location').value,
         birthday: document.getElementById('birthday').value,

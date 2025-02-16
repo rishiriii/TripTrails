@@ -7,6 +7,7 @@ import { checkAuth } from './auth-guard.js';
 let stops = [];
 let mediaFiles = [];
 
+
 function initializeAutocomplete(inputId) {
   const input = document.getElementById(inputId);
   const autocomplete = new google.maps.places.Autocomplete(input, {
@@ -263,6 +264,7 @@ document.getElementById('add-trip-form').addEventListener('submit', async (event
       days,
       nights,
       numberOfPeople,
+      createdAt: Date.now(),  
       expense: parseFloat(formData.get('expense')) || 0,
       description: formData.get('description'),
       visibility: formData.get('visibility'),

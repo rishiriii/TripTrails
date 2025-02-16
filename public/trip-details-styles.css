@@ -588,3 +588,16 @@ h1 {
 .expense-item.highlight .expense-value {
   color: white;
 }
+.author-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.author-photo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+}

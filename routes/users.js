@@ -1,5 +1,5 @@
 import express from 'express';
-import { auth } from '../firebaseAdmin.js'; // Ensure this points to your Firebase Admin SDK setup
+import { auth,db } from '../firebaseAdmin.js'; // Ensure this points to your Firebase Admin SDK setup
 
 const router = express.Router();
 
@@ -47,6 +47,45 @@ router.put('/profile', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error updating profile:', error.message);
     res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
+router.get('/:id/profile', authenticateToken, async (req, res) => {
+  console.log(`Received request for user profile: ${req.params.id}`);
+  console.log('Request headers:', req.headers);
+
+  try {
+    const userId = req.params.id;
+    console.log(`Looking up user with UID: ${userId}`);
+
+    if (!db) {
+      console.error('Database connection not established');
+      return res.status(500).json({ message: 'Database connection error' });
+    }
+    console.log(req.params.id);
+    // 🔍 Query Firestore where 'uid' matches the provided user ID
+    const userQuery = await db.collection('userProfiles').where('uid', '==', userId).get();
+    
+    if (userQuery.empty) {
+      console.log(`No profile found for UID: ${userId}`);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get the first matching document
+    const userDoc = userQuery.docs[0];
+    const userData = userDoc.data();
+
+    console.log('Returning user data:', userData);
+
+    // Explicitly set content type
+    res.setHeader('Content-Type', 'application/json');
+    res.json(userData);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({
+      message: 'Failed to fetch user profile',
+      error: error.message
+    });
   }
 });
 

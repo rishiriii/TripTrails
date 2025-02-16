@@ -225,7 +225,7 @@ tripsRouter.get('/:id', async (req, res) => {
     res.json({
       id: tripDoc.id,
       ...processedTripData,
-      authorUsername: userData.userName,
+      authorUid: userData.uid,
       authorDisplayName: userData.displayName,
       authorPhotoURL: userData.photoURL
     });
@@ -504,6 +504,26 @@ tripsRouter.post('/:id/views', async (req, res) => {
       res.status(500).json({
         message: 'Error submitting report',
         error: error.message
+      });
+    }
+  });
+
+  tripsRouter.get('/user/:userId', async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      const tripsRef = db.collection('trips');
+      const snapshot = await tripsRef.where('userId', '==', userId).get();
+  
+      const trips = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+  
+      res.json(trips);
+    } catch (error) {
+      res.status(500).json({ 
+        message: 'Error fetching user trips', 
+        error: error.message 
       });
     }
   });

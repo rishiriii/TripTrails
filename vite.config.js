@@ -6,9 +6,10 @@ export default defineConfig({
     outDir: '../dist',  // Output to dist folder outside public
   },
   server: {
-    host: '0.0.0.0',  // Add this line to allow external access
+    host: '0.0.0.0',  // Allow external access
     proxy: {
-      '/trips': 'http://localhost:3000',  // Proxy requests to your Express backend
+      '/trips': 'http://localhost:3000',  // Proxy trips requests to your Express backend
+      '/users': 'http://localhost:3000',  // Add this line to proxy users requests
     },
   },
 });

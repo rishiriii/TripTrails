@@ -266,11 +266,14 @@ async function loadTripDetails() {
     // Updated profile photo handling
     const authorPhoto = document.getElementById('author-photo');
     const authorName = document.getElementById('trip-username');
+    const authorContainer = authorPhoto.parentElement;
+    showUserProfileModal(trip.authorUid); // Pass the UID
+    // Add author ID to the container
+    authorContainer.dataset.authorId = trip.authorId;
     
     if (trip.authorPhotoURL) {
-      // Only set the error handler after setting the actual photo URL
       authorPhoto.onerror = function() {
-        this.onerror = null; // Prevent infinite loop if default image also fails
+        this.onerror = null; 
         this.src = '/images/default-profile.jpg';
       };
       authorPhoto.src = trip.authorPhotoURL;
@@ -279,6 +282,21 @@ async function loadTripDetails() {
     }
     
     authorName.textContent = `Posted by: ${trip.authorDisplayName || 'Unknown user'}`;
+    
+    // Make both photo and name clickable
+    authorContainer.style.cursor = 'pointer';
+    authorContainer.addEventListener('click', () => {
+      showUserProfileModal(trip.authorUid, trip.authorDisplayName, trip.authorPhotoURL);
+    });
+    
+    // Add hover effect
+    authorContainer.addEventListener('mouseenter', () => {
+      authorName.style.textDecoration = 'underline';
+    });
+    
+    authorContainer.addEventListener('mouseleave', () => {
+      authorName.style.textDecoration = 'none';
+    });
 
     // Populate stops
     const stopsList = document.getElementById('trip-stops');
@@ -1229,3 +1247,360 @@ document.getElementById('reportDetails').addEventListener('input', (e) => {
   }
 });
 
+async function loadUserProfile(userId) {
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const url = `/users/${userId}/profile`;
+    
+    console.log(`Fetching user profile from: ${url}`);
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    console.log("Fetching profile for userId:", userId);
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries([...response.headers.entries()]));
+    
+    const contentType = response.headers.get('content-type');
+    console.log('Content-Type:', contentType);
+    
+    if (!response.ok) {
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed with status: ${response.status}`);
+      } else {
+        // For HTML responses, just log the first 100 characters to see what's coming back
+        const text = await response.text();
+        console.error('Received HTML instead of JSON:', text.substring(0, 100) + '...');
+        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+      }
+    }
+    
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('Received non-JSON response:', text.substring(0, 100) + '...');
+      throw new Error('Server did not return JSON');
+    }
+    
+    const data = await response.json();
+    console.log('Successfully loaded profile data:', data);
+    return data;
+  } catch (error) {
+    console.error('Error loading user profile:', error);
+    throw error;
+  }
+}
+
+async function fetchUserTrips(userId) {
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const response = await fetch(`/trips/user/${userId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch user trips');
+    return await response.json();
+  } catch (error) {
+    console.error('Error loading user trips:', error);
+    throw error;
+  }
+}
+
+function createUserProfileModal() {
+  // Check if modal already exists
+  if (document.getElementById('userProfileModal')) {
+    return;
+  }
+
+  const modalHTML = `
+    <div id="userProfileModal" class="profile-modal">
+      <div class="modal-content profile-modal-content">
+        <span class="close-button">&times;</span>
+        <div class="user-profile-header">
+          <img id="modal-user-photo" class="modal-user-photo" src="/images/default-profile.jpg" alt="Profile Photo">
+          <h2 id="modal-user-name">Loading...</h2>
+        </div>
+        <div class="user-profile-details">
+          <p id="modal-user-bio" class="user-bio">Loading bio...</p>
+          <div class="user-stats">
+            <div class="stat">
+              <span class="stat-value" id="modal-trip-count">-</span>
+              <span class="stat-label">Trips</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="modal-joined-date">-</span>
+              <span class="stat-label">Joined</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="modal-user-likes">-</span>
+              <span class="stat-label">Likes</span>
+            </div>
+          </div>
+        </div>
+        
+        <h3>Recent Trips</h3>
+        <div id="user-trips-container" class="user-trips-container">
+          <div class="loading-spinner">Loading trips...</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Append modal to body
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  // Add event listener to close button
+  const modal = document.getElementById('userProfileModal');
+  const closeButton = modal.querySelector('.close-button');
+  
+  closeButton.addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+
+  // Close when clicking outside the modal
+  window.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+
+  // Add CSS for the modal
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    .profile-modal-content {
+      max-width: 600px;
+      padding: 30px;
+      border-radius: 12px;
+    }
+    
+    .user-profile-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-user-photo {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-right: 20px;
+      border: 3px solid #3498db;
+    }
+    
+    .user-bio {
+      font-style: italic;
+      color: #555;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    
+    .user-stats {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      padding: 15px;
+      background: #f5f8fa;
+      border-radius: 8px;
+    }
+    
+    .stat {
+      text-align: center;
+      flex: 1;
+    }
+    
+    .stat-value {
+      display: block;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      color: #7f8c8d;
+    }
+    
+   .user-trips-container {
+  display: flex; /* Align trips in a row */
+  flex-wrap: nowrap; /* Prevent wrapping */
+  gap: 16px; /* Space between trips */
+  overflow-x: auto; /* Enable horizontal scrolling */
+  overflow-y: hidden; /* Hide vertical scrolling */
+  white-space: nowrap; /* Prevent line breaks */
+  padding-bottom: 10px; /* Prevent cut-off */
+  max-width: 100%; /* Fit within modal */
+  scrollbar-width: thin; /* Firefox scrollbar */
+  scrollbar-color: #aaa transparent;
+}
+
+/* Make trip cards stay the same width */
+.user-trip-card {
+  flex: 0 0 auto; /* Prevent stretching */
+  min-width: 250px;
+  max-width: 300px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Scrollbar Styling for WebKit Browsers */
+.user-trips-container::-webkit-scrollbar {
+  height: 6px; /* Thin horizontal scrollbar */
+}
+
+.user-trips-container::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 4px;
+}
+
+.user-trips-container::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+    
+    .user-trip-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .user-trip-image {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+    
+    .user-trip-details {
+      padding: 15px;
+    }
+    
+    .user-trip-title {
+      font-weight: bold;
+      margin: 0 0 10px 0;
+      font-size: 1.1em;
+    }
+    
+    .user-trip-dates {
+      font-size: 0.9em;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    
+    .user-trip-stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8em;
+      color: #888;
+    }
+  `;
+  
+  document.head.appendChild(styleElement);
+}
+
+async function showUserProfileModal(userId, username, photoURL) {
+  // Create modal if it doesn't exist
+  createUserProfileModal();
+  
+  const modal = document.getElementById('userProfileModal');
+  const modalUserPhoto = document.getElementById('modal-user-photo');
+  const modalUserName = document.getElementById('modal-user-name');
+  const modalUserBio = document.getElementById('modal-user-bio');
+  const modalTripCount = document.getElementById('modal-trip-count');
+  const modalJoinedDate = document.getElementById('modal-joined-date');
+  const modalUserLikes = document.getElementById('modal-user-likes');
+  const userTripsContainer = document.getElementById('user-trips-container');
+  
+  // Set initial values
+  modalUserName.textContent = username || 'Loading...';
+  if (photoURL) {
+    modalUserPhoto.src = photoURL;
+    modalUserPhoto.onerror = function() {
+      this.onerror = null;
+      this.src = '/images/default-profile.jpg';
+    };
+  } else {
+    modalUserPhoto.src = '/images/default-profile.jpg';
+  }
+  
+  modalUserBio.textContent = 'Loading bio...';
+  modalTripCount.textContent = '-';
+  modalJoinedDate.textContent = '-';
+  modalUserLikes.textContent = '-';
+  userTripsContainer.innerHTML = '<div class="loading-spinner">Loading trips...</div>';
+  
+  // Show the modal
+  modal.style.display = 'block';
+  
+  try {
+    // Fetch user profile data
+    const userProfile = await loadUserProfile(userId);
+    
+    // Update profile info
+    modalUserName.textContent = userProfile.displayName || username || 'Anonymous User';
+    modalUserBio.textContent = userProfile.bio || 'No bio available';
+    
+    // Format and display joined date
+    if (userProfile.createdAt) {
+      const joinDate = new Date(userProfile.createdAt);
+      modalJoinedDate.textContent = joinDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        year: 'numeric' 
+      });
+    }
+    
+    modalUserLikes.textContent = userProfile.totalLikes || 0;
+    
+    // Fetch user trips
+    const trips = await fetchUserTrips(userId);
+    modalTripCount.textContent = trips.length;
+    
+    // Display trips
+    if (trips.length === 0) {
+      userTripsContainer.innerHTML = '<p class="no-trips">This user hasn\'t posted any trips yet.</p>';
+    } else {
+      userTripsContainer.innerHTML = '';
+      
+      // Sort trips by date (newest first)
+      trips.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      trips.forEach(trip => {
+        const tripCard = document.createElement('div');
+        tripCard.className = 'user-trip-card';
+        
+        const defaultTripImage = '/images/default-trip-banner.jpg';
+        const tripImage = trip.bannerPhoto || (trip.mediaUrls && trip.mediaUrls.length > 0 ? trip.mediaUrls[0] : defaultTripImage);
+        
+        tripCard.innerHTML = `
+          <img src="${tripImage}" alt="${trip.title}" class="user-trip-image" 
+               onerror="this.onerror=null; this.src='${defaultTripImage}'">
+          <div class="user-trip-details">
+            <h4 class="user-trip-title">${trip.title || 'Untitled Trip'}</h4>
+            <div class="user-trip-dates">${trip.days || 0} days${trip.start && trip.end ? ` • ${trip.start} to ${trip.end}` : ''}</div>
+            <div class="user-trip-stats">
+              <span><i class="far fa-heart"></i> ${trip.likes || 0}</span>
+              <span><i class="far fa-eye"></i> ${trip.views || 0}</span>
+            </div>
+          </div>
+        `;
+        
+        // Make the card clickable
+        tripCard.addEventListener('click', () => {
+          window.location.href = `trip-details.html?id=${trip.id}`;
+        });
+        
+        userTripsContainer.appendChild(tripCard);
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error displaying user profile:', error);
+    modalUserBio.textContent = 'Error loading user profile.';
+    userTripsContainer.innerHTML = '<p class="error-message">Failed to load trips. Please try again later.</p>';
+  }
+}

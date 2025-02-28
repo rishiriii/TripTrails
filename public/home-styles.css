@@ -300,9 +300,12 @@ body {
 }
 
 .destinations-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 30px;
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 20px;
+  white-space: nowrap;
 }
 
 .destination-card {
@@ -562,21 +565,31 @@ body {
 }
 
 .destinations-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 2rem;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 20px;
+  white-space: nowrap;
 }
 
 .destination-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-  position: relative;
+  flex: 0 0 auto;
+  width: 330px; /* Adjust as needed */
+  scroll-snap-align: start;
+}
+
+.destinations-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.destinations-grid::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 10px;
+}
+
+.destinations-grid::-webkit-scrollbar-track {
+  background: #f1f1f1;
 }
 
 .destination-card:hover {
@@ -638,4 +651,90 @@ body {
   font-size: 1rem;
   font-weight: 500;
   color: #1f2937;
+}
+
+
+.testimonials-grid {
+  display: flex;
+  overflow-x: auto;
+  gap: 20px;
+  padding-bottom: 10px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.testimonial-card {
+  flex: 0 0 auto;
+  width: 300px;
+  min-width: 300px;
+}
+.testimonials-container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.testimonials-grid {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+  animation: scroll 40s linear infinite;
+}
+
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.testimonial-card {
+  flex: 0 0 300px;
+  animation: itemScroll 40s linear infinite;
+}
+
+/* Add this to your home-styles.css file */
+
+.testimonials-container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.testimonials-wrapper {
+  display: flex;
+  width: max-content;
+}
+
+.testimonials-grid {
+  display: flex;
+  gap: 20px;
+  /* Remove the animation from here */
+}
+
+/* Define the width for each grid */
+#testimonials-grid-1, #testimonials-grid-2 {
+  display: flex;
+  gap: 20px;
+}
+
+/* Animation for the wrapper containing both grids */
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); } /* Move by exactly half the content width */
+}
+
+/* Apply animation to the wrapper */
+.testimonials-wrapper {
+  animation: scroll 40s linear infinite;
+}
+
+/* Ensure each card has consistent width */
+.testimonial-card {
+  flex: 0 0 300px;
+  min-width: 300px;
+  margin-right: 20px; /* Consistent spacing */
+}
+
+/* Pause animation on hover for better UX */
+.testimonials-wrapper:hover {
+  animation-play-state: paused;
 }

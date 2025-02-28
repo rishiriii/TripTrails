@@ -78,7 +78,7 @@ async function fetchTopDestinations() {
       const q = query(
           collection(db, 'destinations'),
           orderBy('tripCount', 'desc'),
-          limit(5)
+          limit(10)
       );
 
       const querySnapshot = await getDocs(q);
@@ -215,11 +215,56 @@ function handleScroll() {
   animateOnScroll();
 }
 
+
+function setupInfiniteTestimonials() {
+  const originalGrid = document.getElementById('testimonials-grid-1');
+  const cloneGrid = document.getElementById('testimonials-grid-2');
+  
+  // Clone all cards
+  if (originalGrid && cloneGrid) {
+    cloneGrid.innerHTML = originalGrid.innerHTML;
+    
+    // Calculate the width of all items to ensure smooth looping
+    const wrapper = document.querySelector('.testimonials-wrapper');
+    
+    // Set animation duration based on the number of cards for a smoother experience
+    const cardCount = originalGrid.querySelectorAll('.testimonial-card').length;
+    const scrollSpeed = cardCount * 5; // 5 seconds per card is a good pace
+    wrapper.style.animationDuration = `${scrollSpeed}s`;
+    
+    // Ensure smooth looping by duplicating enough content
+    function checkWidth() {
+      const wrapperWidth = wrapper.offsetWidth;
+      const containerWidth = document.querySelector('.testimonials-container').offsetWidth;
+      
+      // If the wrapper isn't at least twice the container width, we need more duplicates
+      if (wrapperWidth < containerWidth * 2) {
+        // Clone more content as needed
+        cloneGrid.innerHTML += originalGrid.innerHTML;
+      }
+    }
+    
+    // Check after images and content are loaded
+    window.addEventListener('load', checkWidth);
+    // Also check on resize
+    window.addEventListener('resize', checkWidth);
+    
+    // Initial check
+    setTimeout(checkWidth, 100);
+  }
+}
+
+// Make sure this function runs after DOM loads
+document.addEventListener('DOMContentLoaded', () => {
+  setupInfiniteTestimonials();
+});
+
 // Initialize everything when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   fetchTopDestinations();
   initializeMobileMenu();
   animateOnScroll();
+  setupInfiniteTestimonials();
 });
 
 // Add scroll event listener

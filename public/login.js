@@ -69,10 +69,11 @@ class LoginManager {
 
       // ✅ Hardcoded admin check
       if (email === "akl@gmail.com" && password === "111111") {
+        await signInWithEmailAndPassword(auth, email, password); // ✅ Logs admin into Firebase
         PopupManager.show('Admin Login Successful!');
         setTimeout(() => window.location.href = 'admin.html', 1500);
         return;
-      }
+    }
 
       // ✅ Normal login for other users
       const userCredential = await signInWithEmailAndPassword(auth, email, password);

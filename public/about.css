@@ -1,0 +1,402 @@
+/* Add to home-styles.css */
+
+/* Mission Section */
+.mission-card {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: linear-gradient(135deg, #6c63ff10 0%, #5650d810 100%);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.stat-item {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+.stat-label {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+/* Process Steps */
+.process-steps {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.process-step {
+    text-align: center;
+    padding: 2rem;
+    background: white;
+    border-radius: 10px;
+    position: relative;
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+}
+
+/* Timeline */
+.story-timeline {
+    position: relative;
+    padding: 2rem 0;
+}
+
+.timeline-item {
+    display: flex;
+    gap: 2rem;
+    padding: 2rem 0;
+    position: relative;
+}
+
+.timeline-year {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    min-width: 100px;
+}
+
+.timeline-content {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+    flex-grow: 1;
+}
+
+/* Team Grid */
+.team-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.team-member {
+    text-align: center;
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+}
+
+.team-member img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .timeline-item {
+        flex-direction: column;
+    }
+    
+    .process-steps {
+        grid-template-columns: 1fr;
+    }
+    
+    .cta-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .button-outline {
+        border: 2px solid white;
+        background: transparent;
+    }
+}
+
+/* Milestones Section */
+.milestones {
+    padding: 4rem 0;
+    background: #f9fafe;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 3rem;
+    font-size: 2.2rem;
+    color: var(--primary-dark);
+}
+
+.milestones-grid {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.milestone-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease;
+}
+
+.milestone-card:hover {
+    transform: translateY(-10px);
+}
+
+.milestone-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.milestone-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--primary-color);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.milestone-date {
+    display: flex;
+    flex-direction: column;
+}
+
+.milestone-date .month {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.milestone-date .year {
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.milestone-title {
+    font-size: 1.4rem;
+    color: var(--primary-dark);
+    margin-bottom: 1rem;
+}
+
+.milestone-description {
+    color: var(--text-light);
+    line-height: 1.7;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .milestones-grid {
+        grid-template-columns: 1fr;
+        padding: 0 1rem;
+    }
+    
+    .milestone-card {
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* Resume Profile Styles */
+.resume-profile {
+    display: flex;
+    gap: 3rem;
+    background: white;
+    padding: 2.5rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.resume-photo {
+    flex: 0 0 200px;
+}
+
+.resume-photo img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.resume-content {
+    flex: 1;
+}
+
+.resume-header h3 {
+    font-size: 2rem;
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem;
+}
+
+.position {
+    font-size: 1.1rem;
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+}
+
+.separator {
+    width: 60px;
+    height: 3px;
+    background: var(--primary-color);
+    margin: 1.5rem 0;
+}
+
+.bio p {
+    color: var(--text-light);
+    line-height: 1.7;
+    margin-bottom: 2rem;
+}
+
+.resume-projects h4 {
+    color: var(--primary-dark);
+    margin-bottom: 1.2rem;
+    font-size: 1.3rem;
+}
+
+.project-list {
+    list-style: none;
+    padding: 0;
+}
+
+.project-list li {
+    padding: 0.8rem 0;
+    color: var(--text-color);
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.project-list li:last-child {
+    border-bottom: none;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .resume-profile {
+        flex-direction: column;
+        padding: 1.5rem;
+    }
+    
+    .resume-photo {
+        flex: none;
+        width: 200px;
+        margin: 0 auto;
+    }
+    
+    .resume-header h3 {
+        font-size: 1.6rem;
+        text-align: center;
+    }
+    
+    .position {
+        text-align: center;
+    }
+    
+    .separator {
+        margin: 1.5rem auto;
+    }
+}
+
+/* Process Steps Styling */
+.process {
+    padding: 4rem 0;
+    background: #f8f9fa;
+}
+/* Center the section heading */
+.process .container h2 {
+    text-align: center;
+    width: 100%;
+}
+
+/* Ensure grid items are centered */
+.process-steps {
+    justify-content: center;
+}
+.process-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.step-box {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease;
+    text-align: center;
+    height: 100%;
+}
+
+.step-box:hover {
+    transform: translateY(-5px);
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0 auto 1.5rem;
+}
+
+.process h3 {
+    color: var(--primary-dark);
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+}
+
+.process p {
+    color: var(--text-light);
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .process-steps {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .step-box {
+        padding: 1.5rem;
+    }
+}

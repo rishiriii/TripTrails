@@ -1,6 +1,7 @@
 import { auth } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
-
+import { initializeReportModal } from './trip-report.js';
+import { handleReportSubmission } from './trip-report.js';
 const urlParams = new URLSearchParams(window.location.search);
 const tripId = urlParams.get('id');
 let isLiked = false;
@@ -638,15 +639,13 @@ function createAttractionCard(place) {
       // Try to get a good landscape photo
       const bestPhoto = sortedPhotos[0];
       photoUrl = bestPhoto.getUrl({
-        maxWidth: 400,  // Increased size for better quality
-        maxHeight: 300  // Maintain 4:3 aspect ratio minimum
+       
       });
 
       // Fallback to first photo if something goes wrong
       if (!photoUrl) {
         photoUrl = place.photos[0].getUrl({
-          maxWidth: 400,
-          maxHeight: 300
+         
         });
       }
     }
@@ -724,6 +723,7 @@ function createAttractionCard(place) {
 
   return card;
 }
+
 
 async function displayNearbyAttractions(location) {
   if (!location) {
@@ -1056,7 +1056,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Insert the back button as the first child of the container
   container.insertBefore(backButton, container.firstChild);
-
+  initializeShareButton();
   // Rest of the code...
   const modal = document.getElementById('reportModal');
   const reportButton = document.getElementById('reportButton');
@@ -1184,25 +1184,8 @@ reportForm.addEventListener('submit', async (e) => {
       throw new Error('Please provide more details about the issue (minimum 10 characters)');
     }
 
-    const token = await auth.currentUser.getIdToken();
-    const response = await fetch(`http://localhost:3000/trips/${tripId}/report`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        reason,
-        details,
-        reportedAt: new Date().toISOString()
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to submit report');
-    }
+    // Use the existing handleReportSubmission function from trip-report.js
+    await handleReportSubmission(tripId, reason, details);
 
     // Show success message and reset form
     const modalBody = document.querySelector('.modal-body');
@@ -1211,7 +1194,8 @@ reportForm.addEventListener('submit', async (e) => {
 
     // Close modal after delay
     setTimeout(() => {
-      modal.style.display = 'none';
+      reportModal.style.display = 'none';
+      modalOverlay.style.display = 'none';
     }, 2000);
 
   } catch (error) {
@@ -1224,6 +1208,8 @@ reportForm.addEventListener('submit', async (e) => {
     submitButton.textContent = originalButtonText;
   }
 });
+
+// Helper functions for showing messages
 
 // Add validation feedback as user types
 document.getElementById('reportDetails').addEventListener('input', (e) => {
@@ -1304,7 +1290,15 @@ async function fetchUserTrips(userId) {
     });
 
     if (!response.ok) throw new Error('Failed to fetch user trips');
-    return await response.json();
+    const trips = await response.json();
+    
+    // Calculate total likes across all trips
+    const totalLikes = trips.reduce((sum, trip) => sum + (trip.likes || 0), 0);
+    
+    return {
+      trips,
+      totalLikes
+    };
   } catch (error) {
     console.error('Error loading user trips:', error);
     throw error;
@@ -1524,6 +1518,7 @@ async function showUserProfileModal(userId, username, photoURL) {
   const modalUserLikes = document.getElementById('modal-user-likes');
   const userTripsContainer = document.getElementById('user-trips-container');
   
+  // Set initial states
   modalUserName.textContent = username || 'Loading...';
   if (photoURL) {
     modalUserPhoto.src = photoURL;
@@ -1545,23 +1540,20 @@ async function showUserProfileModal(userId, username, photoURL) {
   
   try {
     const userProfile = await loadUserProfile(userId);
+    const { trips, totalLikes } = await fetchUserTrips(userId);
     
     modalUserName.textContent = userProfile.displayName || username || 'Anonymous User';
     modalUserBio.textContent = userProfile.bio || 'No bio available';
-    
-    // Display location instead of join date
     modalLocation.textContent = userProfile.location || 'Not specified';
-    
-    modalUserLikes.textContent = userProfile.totalLikes || 0;
-    
-    const trips = await fetchUserTrips(userId);
     modalTripCount.textContent = trips.length;
+    modalUserLikes.textContent = totalLikes; // Update with total likes from all trips
     
     if (trips.length === 0) {
       userTripsContainer.innerHTML = '<p class="no-trips">This user hasn\'t posted any trips yet.</p>';
     } else {
       userTripsContainer.innerHTML = '';
       
+      // Sort trips by creation date
       trips.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       
       trips.forEach(trip => {
@@ -1600,3 +1592,57 @@ async function showUserProfileModal(userId, username, photoURL) {
     userTripsContainer.innerHTML = '<p class="error-message">Failed to load trips. Please try again later.</p>';
   }
 }
+
+function initializeShareButton() {
+  const shareButton = document.querySelector('.share-button');
+  const dropdown = document.querySelector('.share-dropdown');
+  const currentUrl = window.location.href;
+
+  // Toggle dropdown
+  shareButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('show');
+  });
+
+  // Handle share options
+  document.querySelectorAll('.share-option').forEach(option => {
+    option.addEventListener('click', (e) => {
+      e.preventDefault();
+      const platform = e.currentTarget.dataset.platform;
+      const tripTitle = document.getElementById('trip-title').textContent;
+      
+      switch(platform) {
+        case 'copy':
+          navigator.clipboard.writeText(currentUrl)
+            .then(() => showSuccessMessage('Link copied to clipboard!', document.body))
+            .catch(() => showErrorMessage('Failed to copy link', document.body));
+          break;
+          
+        case 'facebook':
+          window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`, '_blank');
+          break;
+          
+        case 'twitter':
+          window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(`Check out this trip: ${tripTitle}`)}`, '_blank');
+          break;
+          
+        case 'whatsapp':
+          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`${tripTitle} - ${currentUrl}`)}`, '_blank');
+          break;
+      }
+      
+      dropdown.classList.remove('show');
+    });
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.share-container')) {
+      dropdown.classList.remove('show');
+    }
+  });
+}
+
+// Add this to the DOMContentLoaded event listener:
+
+initializeReportModal();

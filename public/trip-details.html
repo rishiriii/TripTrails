@@ -16,10 +16,10 @@
     }
   </script>
   <script 
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCLfBjaijHnnRh2SNhqR4Xy_a98qiUbc5g&libraries=places"
-  async
-  defer
-></script>
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAPXgT6iz0WNEHutlz5eaWdAL9mIZeriIE&libraries=places"
+    async
+    defer
+  ></script>
 </head>
 <body>
   <div class="container">
@@ -37,34 +37,33 @@
           <img id="author-photo" src="/images/default-profile.jpg" alt="Author photo">
           <span id="trip-username">Posted by: Loading...</span>
       </div>
-     </div>
+    </div>
 
-      <div class="trip-stats">
-        <div class="stat-item">
-          <h4>Duration</h4>
-          <p id="trip-days"></p>
-        </div>
-        <div class="stat-item">
-          <h4>Route</h4>
-          <p id="trip-start-end"></p>
-        </div>
-        <div class="stat-item">
-          <h4>Cost</h4>
-          <p id="trip-expense"></p>
-        </div>
+    <div class="trip-stats">
+      <div class="stat-item">
+        <h4>Duration</h4>
+        <p id="trip-days"></p>
       </div>
+      <div class="stat-item">
+        <h4>Route</h4>
+        <p id="trip-start-end"></p>
+      </div>
+      <div class="stat-item">
+        <h4>Cost</h4>
+        <p id="trip-expense"></p>
+      </div>
+    </div>
 
-      <div class="trip-description">
-        <h4>About this trip</h4>
-        <p id="trip-description"></p>
-      </div>
+    <div class="trip-description">
+      <h4>About this trip</h4>
+      <p id="trip-description"></p>
+    </div>
 
     <!-- Timeline -->
     <div class="timeline-container">
       <h2>Trip Route</h2>
       <ul id="trip-stops"></ul>
     </div>
-
 
     <!-- Engagement Section -->
     <div class="engagement-section">
@@ -74,12 +73,40 @@
       <button id="likeButton" class="like-button">
         <i class="fas fa-heart"></i> <span id="likeCount">0</span>
       </button>
+      <div class="share-container">
+        <button class="share-button">
+          <i class="fas fa-share-alt"></i> Share
+        </button>
+        <div class="share-dropdown">
+          <button class="share-option" data-platform="copy">
+            <i class="fas fa-link"></i> Copy Link
+          </button>
+          <button class="share-option" data-platform="facebook">
+            <i class="fab fa-facebook"></i> Facebook
+          </button>
+          <button class="share-option" data-platform="twitter">
+            <i class="fab fa-twitter"></i> Twitter
+          </button>
+          <button class="share-option" data-platform="whatsapp">
+            <i class="fab fa-whatsapp"></i> WhatsApp
+          </button>
+        </div>
+        
+      </div>
+      <button id="reportButton" class="report-button">
+        <i class="fas fa-flag"></i> Report
+      </button>
     </div>
-    <div id="reportModal" class="modal">
+    
+    <!-- Modal Overlay -->
+    <div id="modalOverlay"></div>
+    
+    <!-- Report Modal -->
+    <div id="reportModal">
       <div class="modal-content">
         <div class="modal-header">
           <h2>Report Trip</h2>
-          <span class="close-button">&times;</span>
+          <button class="close-button">&times;</button>
         </div>
         <div class="modal-body">
           <form id="reportForm">
@@ -96,7 +123,7 @@
             </div>
             <div class="form-group">
               <label for="reportDetails">Additional details:</label>
-              <textarea id="reportDetails" rows="4" placeholder="Please provide more information about your report..."></textarea>
+              <textarea id="reportDetails" rows="4" placeholder="Provide more information..."></textarea>
             </div>
             <div class="form-actions">
               <button type="button" class="cancel-button">Cancel</button>
@@ -112,5 +139,6 @@
   
 
   <script type="module" src="trip-details.js"></script>
+  <script type="module" src="trip-report.js"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 import express from 'express';
 import { db } from '../firebaseAdmin.js';
 import verifyToken from '../middleware/verifyToken.js';
+import admin from 'firebase-admin';
 
 const tripsRouter = express.Router();
 
@@ -467,7 +468,7 @@ tripsRouter.post('/:id/views', async (req, res) => {
         reviewNotes: null,
         reportedTripData: {
           title: tripData.title,
-          createdAt: tripData.createdAt,
+          createdAt: tripData.createdAt||0,
           url: `${req.protocol}://${req.get('host')}/trips/${tripId}`
         }
       };

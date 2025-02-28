@@ -4,7 +4,7 @@ export function handleReportSubmission(tripId, reason, comment) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = await auth.currentUser.getIdToken();
-      const response = await fetch(`/trips/${tripId}/reports`, {
+      const response = await fetch(`/trips/${tripId}/report`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -13,18 +13,21 @@ export function handleReportSubmission(tripId, reason, comment) {
         body: JSON.stringify({
           reason,
           comment,
-          timestamp: new Date().toISOString()
+         
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit report');
+        // Parse error response as JSON if possible
+        const errorData = await response.json().catch(() => ({
+          message: response.statusText
+        }));
+        throw new Error(errorData.message || `Report failed (${response.status})`);
       }
 
-      const result = await response.json();
-      resolve(result);
+      // ... rest of existing code ...
     } catch (error) {
-      console.error('Error submitting report:', error);
+      console.error('Full report error:', error);
       reject(error);
     }
   });

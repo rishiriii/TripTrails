@@ -1,4 +1,9 @@
 import { db } from '../firebase.js';  // ✅ Use Web SDK for frontend
+import { auth } from '../firebase.js'; // ✅ Import Firebase Auth
+import { getAuth } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
+// ✅ Ensure `auth` is initialized
+const authInstance = getAuth();
 
 import { collection, query, where, getDocs, updateDoc, deleteDoc,doc } from 'firebase/firestore';
 window.searchUser = searchUser;
@@ -91,7 +96,7 @@ async function deleteUser(userId) {
 // 🚀 Load reported trips
 async function fetchReportedTrips() {
     const reportsRef = collection(db, 'tripReports');
-    const q = query(reportsRef, where('status', '==', 'not viewed'));
+    const q = query(reportsRef, where('status', '==', 'pending'));
     const reportsSnapshot = await getDocs(q);
 
     return reportsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -166,13 +171,23 @@ async function searchUser() {
     `;
 }
 
-function viewTrip(tripId) {
+async function viewTrip(tripId) {
     if (!tripId) {
         alert("Invalid trip ID");
         return;
     }
-    window.location.href = `trip-details.html?id=${tripId}`;
+
+    const user = auth.currentUser;
+    if (!user) {
+        alert("You need to log in again.");
+        window.location.href = "login.html"; // Redirect to login if not authenticated
+        return;
+    }
+
+    const token = await user.getIdToken(); // Get the Firebase auth token
+    window.location.href = `trip-details.html?id=${tripId}&token=${token}`;
 }
+
 
 async function deleteTrip(tripId) {
     if (!tripId) {
@@ -203,6 +218,19 @@ async function deleteTrip(tripId) {
     }
 }
 
+async function logout() {
+    try {
+        await signOut(auth);
+        alert('Logged out successfully!');
+        window.location.href = 'login.html'; // Redirect to login page
+    } catch (error) {
+        console.error("Logout failed:", error);
+        alert("Failed to log out. Try again.");
+    }
+}
+
+// ✅ Ensure logout function is available globally
+window.logout = logout;
 
 
 // 🎯 Load data on page load

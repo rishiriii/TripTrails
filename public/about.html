@@ -1,0 +1,227 @@
+<!-- about.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About TripTrails - Craft Your Journey</title>
+    <link rel="stylesheet" href="home-styles.css">
+    <link rel="stylesheet" href="about.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="#" class="logo">TripTrails</a>
+            <nav class="nav-links">
+                <a href="/home.html" class="nav-link">Home</a>
+                <a href="/explore.html" class="nav-link">Explore</a>
+                <a href="/about.html" class="nav-link active">About Us</a>
+                <a href="#" class="nav-link">Contact Us</a>
+                <button onclick="window.location.href='add-trip.html'" class="add-trip-btn">Add Trip</button>
+            </nav>
+            <div id="profile-container"></div> <!-- Add profile container -->
+            <button class="menu-toggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container">
+                <h1 class="animate-on-scroll">Where Every Journey Becomes a Story</h1>
+                <p class="animate-on-scroll">Transform your travel dreams into shareable adventures with TripTrails</p>
+                <div class="gallery-grid">
+                    <div class="gallery-item animate-on-scroll">
+                        <img src="images/image.png" alt="Travel Planning">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Mission Section -->
+        <section class="features">
+            <div class="container">
+                <div class="feature-card animate-on-scroll mission-card">
+                    <i class="fas fa-bullseye"></i>
+                    <h2>Our Mission</h2>
+                    <p>To empower travelers with tools that make trip planning collaborative, creative, and stress-free. We're building a global community where every journey inspires others.</p>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-number">100+</div>
+                            <div class="stat-label">Trips Planned</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">30+</div>
+                            <div class="stat-label">Countries Covered</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="process">
+            <div class="container">
+                <h2>How TripTrails Works</h2>
+                <div class="process-steps">
+                    <!-- Step 1 -->
+                    <div class="process-step">
+                        <div class="step-box">
+                            <div class="step-number">1</div>
+                            <h3>Dream It</h3>
+                            <p>Start with a blank canvas and create your trip</p>
+                        </div>
+                    </div>
+        
+                    <!-- Step 2 -->
+                    <div class="process-step">
+                        <div class="step-box">
+                            <div class="step-number">2</div>
+                            <h3>Build It</h3>
+                            <p>Add destinations, activities, and collaborate in real-time</p>
+                        </div>
+                    </div>
+        
+                    <!-- Step 3 -->
+                    <div class="process-step">
+                        <div class="step-box">
+                            <div class="step-number">3</div>
+                            <h3>Share It</h3>
+                            <p>Publish your journey and inspire fellow travelers</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="milestones">
+            <div class="container">
+                <h2 class="section-title">Our Evolution</h2>
+                
+                <div class="milestones-grid">
+                    <!-- The Spark -->
+                    <div class="milestone-card animate-on-scroll">
+                        <div class="milestone-header">
+                            <div class="milestone-icon">
+                                <i class="fas fa-lightbulb"></i>
+                            </div>
+                            <div class="milestone-date">
+                                <span class="month">March</span>
+                                <span class="year">2024</span>
+                            </div>
+                        </div>
+                        <h3 class="milestone-title">The Spark</h3>
+                        <p class="milestone-description">
+                            Founder Rishi faced trip-planning chaos during a trip to Leh Ladakh, 
+                            inspiring the creation of TripTrails.
+                        </p>
+                    </div>
+        
+                    <!-- First Prototype -->
+                    <div class="milestone-card animate-on-scroll">
+                        <div class="milestone-header">
+                            <div class="milestone-icon">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div class="milestone-date">
+                                <span class="month">August</span>
+                                <span class="year">2024</span>
+                            </div>
+                        </div>
+                        <h3 class="milestone-title">First Prototype</h3>
+                        <p class="milestone-description">
+                            Built initial version as a college project with the goal of 
+                            revolutionizing travel planning.
+                        </p>
+                    </div>
+        
+                    <!-- Global Launch -->
+                    <div class="milestone-card animate-on-scroll">
+                        <div class="milestone-header">
+                            <div class="milestone-icon">
+                                <i class="fas fa-rocket"></i>
+                            </div>
+                            <div class="milestone-date">
+                                <span class="month">February</span>
+                                <span class="year">2025</span>
+                            </div>
+                        </div>
+                        <h3 class="milestone-title">Global Launch</h3>
+                        <p class="milestone-description">
+                            Officially launched the completed base platform, committed to 
+                            continuous improvement and innovation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- In the Team Section -->
+<section class="testimonials">
+    <div class="container">
+        <h2 class="animate-on-scroll">About Me</h2>
+        <div class="team-grid">
+            <div class="resume-profile animate-on-scroll">
+                <div class="resume-photo">
+                    <img src="/images/rishi.jpeg" alt="Rishi Sheth">
+                </div>
+                <div class="resume-content">
+                    <div class="resume-header">
+                        <h3>Rishi Sheth</h3>
+                        <p class="position">Chief Explorer & Founder</p>
+                        <div class="separator"></div>
+                    </div>
+                    <div class="bio">
+                        <p>Passionate UI/UX designer crafting intuitive and engaging digital experiences. TY BScIT student from UPG college of Arts Science & Commerce with a strong focus on user-centered design and seamless interactions.</p>
+                    </div>
+                    <div class="resume-projects">
+                        <h4>Featured Projects</h4>
+                        <ul class="project-list">
+                            <li>🗺️ TripTrails - Personalized travel planning platform</li>
+                            <li>👟 ShoeStore - A UI/UX project for Shoe Selling App</li>
+                            <li>🌍 NewsToday - A UI/UX newspaper website with Brutalist Design</li>
+                            <li>🏎 F1 App Redesign - UI/UX project on improving the overall experiance for F1 App</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+        <!-- Final CTA -->
+        <section class="cta">
+            <div class="container">
+                <div class="cta-content animate-on-scroll">
+                    <h2>Ready to Start Your Adventure?</h2>
+                    <p>Join our community of 1 million+ travelers</p>
+                    <div class="cta-buttons">
+                        <a href="/signup.html" class="button">Join Free</a>
+                        <a href="/explore.html" class="button button-outline">Browse Trips</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 TripTrails. All rights reserved.</p>
+            <div class="social-links">
+                <a href="#"><i class="fab fa-instagram"></i></a>
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-facebook"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="about.js"></script>
+    <script type="module" src="profile-dropdown.js"></script>
+<script type="module" src="auth-guard.js"></script>
+</body>
+</html>

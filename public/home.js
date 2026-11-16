@@ -4,10 +4,10 @@ import { db } from '../firebase.js';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { initTopTripsBanner } from './top-trip-banner.js';
 
-const WEATHER_API_KEY = '215f465dceb641daa0e75031251801';
-const GOOGLE_SEARCH_API_KEY = 'AIzaSyAKcLJxLqRDDLVI4y6RUuoYsRTSZtkw1UM';
-const GOOGLE_CX = 'a19696864f287430b';
-const TRAVEL_API_KEY = '8952606821mshc09726990f15f29p168cf5jsn1ef8762235c';
+const WEATHER_API_KEY = '----enter-your-key----';
+const GOOGLE_SEARCH_API_KEY = '----enter-your-key----';
+const GOOGLE_CX = '----enter-your-key----';
+const TRAVEL_API_KEY = '----enter-your-key----';
 
 async function fetchGoogleImage(query) {
   try {

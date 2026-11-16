@@ -4,13 +4,13 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage"; // Import Storage
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCvq6mZ_gzRKr97dS4xFnAN4vHtdVegMUk",
-  authDomain: "triptrails-4fa77.firebaseapp.com",
-  projectId: "triptrails-4fa77",
-  storageBucket: "triptrails-4fa77.firebasestorage.app",
-  messagingSenderId: "115117890029",
-  appId: "1:115117890029:web:c8c0c66fd37a64dade2fe4",
-  measurementId: "G-2Q8699E6LV"
+  apiKey: "Enter key",
+  authDomain: "Enter Domain",
+  projectId: "Enter Id",
+  storageBucket: "Enter Bucket",
+  messagingSenderId: "000000000000",
+  appId: "11111111111111111111111111111111",
+  measurementId: "GGGGGGGGGGGGGG"
 };
 
 const app = initializeApp(firebaseConfig);
